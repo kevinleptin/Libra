@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using JinZhou.Models.Configuration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -22,6 +23,7 @@ namespace JinZhou
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc();
+            services.Configure<WxConfig>(this.Configuration.GetSection("WxConfig"));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

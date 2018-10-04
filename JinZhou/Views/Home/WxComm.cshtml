@@ -1,0 +1,27 @@
+﻿@model JinZhou.Models.ViewModels.HomeWxCommViewModel
+@{
+    ViewData["Title"] = "WxComm";
+}
+
+<h2>WxComm</h2>
+
+
+<h3>Verify Data</h3>
+<hr />
+<p>@Model.VerifyData.Ticket</p>
+<p>@Model.VerifyData.RefreshOn</p>
+<p> &nbsp;</p>
+
+<h3>Access Token</h3>
+<hr/>
+<p>@Model.AccessData.AccessCode</p>
+<p>@Model.AccessData.ExpiresIn</p>
+<p>@Model.AccessData.RefreshOn</p>
+
+
+<h3>Pre Auth Code</h3>
+<hr />
+<p>@Model.PreAuthData.PreAuthCode</p>
+<p>@Model.PreAuthData.ExpiresIn</p>
+<p>@Model.PreAuthData.RefreshOn</p>
+
