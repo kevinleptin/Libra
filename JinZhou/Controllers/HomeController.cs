@@ -9,6 +9,7 @@ using JinZhou.Models.CommEntity;
 using JinZhou.Models.Configuration;
 using Microsoft.Extensions.Options;
 using JinZhou.Models.ViewModels;
+using JinZhou.Services;
 using Senparc.Weixin.Open.ComponentAPIs;
 
 namespace JinZhou.Controllers
@@ -46,10 +47,11 @@ namespace JinZhou.Controllers
 
         public IActionResult Install()
         {
+            LogService.GetInstance().AddLog("Home:Install", null, "View The Page", "", "Info");
             HomeInstallViewModel vm = new HomeInstallViewModel();
             vm.WxAppId = _wxConfig.AppId;
             vm.RedirectUri = _wxConfig.RedirectUri;
-            var tokenResult = ComponentApi.GetComponentAccessToken(_wxConfig.AppId, _wxConfig.AppSecret,"");
+            var tokenResult = ComponentApi.GetComponentAccessToken(_wxConfig.AppId, _wxConfig.AppSecret,ComponentKeys.GetInstance().VerifyData.Ticket);
             var preAuthCodeResult = ComponentApi.GetPreAuthCode(_wxConfig.AppId, tokenResult.component_access_token);
             vm.PreAuthCode = preAuthCodeResult.pre_auth_code;
             return View(vm);
@@ -61,6 +63,7 @@ namespace JinZhou.Controllers
             vm.AccessData = ComponentKeys.GetInstance().AccessData;
             vm.PreAuthData = ComponentKeys.GetInstance().PreAuthData;
             vm.VerifyData = ComponentKeys.GetInstance().VerifyData;
+            vm.Logs = LogService.GetInstance().GetLogs();
             return View(vm);
         }
     }

@@ -25,3 +25,14 @@
 <p>@Model.PreAuthData.ExpiresIn</p>
 <p>@Model.PreAuthData.RefreshOn</p>
 
+<h3>Logs</h3>
+<hr/>
+@foreach (var log in Model.Logs)
+{
+    <h4>[@log.How] @log.What</h4>
+    <p>@log.When</p>
+    <p>@log.Where</p>
+    <p>@log.Who</p>
+    <p>@log.Why</p>
+}
+

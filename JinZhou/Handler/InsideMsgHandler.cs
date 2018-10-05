@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using JinZhou.Models.Configuration;
+using JinZhou.Services;
 using Senparc.Weixin.Open;
 using Senparc.Weixin.Open.Entities.Request;
 using Senparc.Weixin.Open.MessageHandlers;
@@ -21,9 +22,24 @@ namespace JinZhou.Handler
 
         public override string OnComponentVerifyTicketRequest(RequestMessageComponentVerifyTicket requestMessage)
         {
+            LogService.GetInstance().AddLog("OnComponentVerifyTicketRequest", null, "Begin Update Verify Ticket", "", "Info");
+            LogService.GetInstance().AddLog("OnComponentVerifyTicketRequest", null, "verify ticket is "+requestMessage.ComponentVerifyTicket, "", "Info");
             CommEntityUpdater updater = new CommEntityUpdater(_wxConfig);
             updater.UpdateVerifyData(requestMessage.ComponentVerifyTicket);
+            LogService.GetInstance().AddLog("OnComponentVerifyTicketRequest", null, "End Update Verify Ticket", "", "Info");
             return base.OnComponentVerifyTicketRequest(requestMessage);
+        }
+
+        public override void OnExecuting()
+        {
+            try
+            {
+                base.OnExecuting();
+            }
+            catch (Exception ex)
+            {
+                LogService.GetInstance().AddLog("MessageHandler:OnExecuting", null, "OnExecuting", ex.Message, "Error");
+            }
         }
 
         public override string OnAuthorizedRequest(RequestMessageAuthorized requestMessage)

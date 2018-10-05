@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using JinZhou.Models.CommEntity;
 using JinZhou.Models.Configuration;
+using JinZhou.Services;
 using Senparc.Weixin.Open.ComponentAPIs;
 
 namespace JinZhou
@@ -21,6 +22,7 @@ namespace JinZhou
         }
         public void UpdateVerifyData(string tikect)
         {
+            LogService.GetInstance().AddLog("UpdateVerifyData", null, "Begin update verify data","","Info");
             var vd = ComponentKeys.GetInstance().VerifyData;
             vd.Ticket = tikect;
             vd.RefreshOn = DateTime.Now;

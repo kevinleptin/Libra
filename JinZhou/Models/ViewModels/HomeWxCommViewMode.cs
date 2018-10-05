@@ -10,7 +10,7 @@ namespace JinZhou.Models.ViewModels
     {
         public ComponentAccessData AccessData { get; set; }
         public ComponentVerifyData VerifyData { get; set; }
-
         public ComponentPreAuthData PreAuthData { get; set; }
+        public List<Log> Logs { get; set; }
     }
 }
