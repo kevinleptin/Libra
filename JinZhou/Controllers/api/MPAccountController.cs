@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -44,8 +45,10 @@ namespace JinZhou.Controllers.api
             pm.Token = _wxConfig.Token;
             pm.EncodingAESKey = _wxConfig.AesKey;
             
-            LogService.GetInstance().AddLog("MPAccount:Auth", "Thread" + Thread.CurrentThread.ManagedThreadId, "Query is "+Request.QueryString, "", "Info");
-
+            // LogService.GetInstance().AddLog("MPAccount:Auth", "Thread" + Thread.CurrentThread.ManagedThreadId, "Query is "+Request.QueryString, "", "Info");
+            ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
+            ServicePointManager.CheckCertificateRevocationList = false;
+            
             InsideMsgHandler handler = new InsideMsgHandler(Request.Body, _wxConfig, pm);
             handler.Execute();
 

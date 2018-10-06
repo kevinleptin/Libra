@@ -51,9 +51,7 @@ namespace JinZhou.Controllers
             HomeInstallViewModel vm = new HomeInstallViewModel();
             vm.WxAppId = _wxConfig.AppId;
             vm.RedirectUri = _wxConfig.RedirectUri;
-            var tokenResult = ComponentApi.GetComponentAccessToken(_wxConfig.AppId, _wxConfig.AppSecret,ComponentKeys.GetInstance().VerifyData.Ticket);
-            var preAuthCodeResult = ComponentApi.GetPreAuthCode(_wxConfig.AppId, tokenResult.component_access_token);
-            vm.PreAuthCode = preAuthCodeResult.pre_auth_code;
+            vm.PreAuthCode = ComponentKeys.GetInstance().PreAuthData.PreAuthCode;
             return View(vm);
         }
 
