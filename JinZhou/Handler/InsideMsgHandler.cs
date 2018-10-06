@@ -9,6 +9,7 @@ using JinZhou.Services;
 using Senparc.Weixin.Open;
 using Senparc.Weixin.Open.Entities.Request;
 using Senparc.Weixin.Open.MessageHandlers;
+using JinZhou.Models.DbEntities;
 
 namespace JinZhou.Handler
 {
@@ -47,19 +48,46 @@ namespace JinZhou.Handler
 
         public override string OnAuthorizedRequest(RequestMessageAuthorized requestMessage)
         {
-           
+            // create new entity
+            AppAuthInfo appInfo = new AppAuthInfo();
+            appInfo.AppId = requestMessage.AppId;
+            appInfo.Authorized = true;
+            appInfo.Code = requestMessage.AuthorizationCode;
+            appInfo.ExpiredTime = requestMessage.AuthorizationCodeExpiredTime;
+            appInfo.AuthorizerAppId = requestMessage.AuthorizerAppid;
+            appInfo.CreateOn = DateTime.Now;
+            appInfo.LastUpdateOn = DateTime.Now;
+            db.AppAuths.Add(appInfo);
+            db.SaveChanges();
             return base.OnAuthorizedRequest(requestMessage);
         }
 
         public override string OnUnauthorizedRequest(RequestMessageUnauthorized requestMessage)
         {
-            
+            string appId = requestMessage.AppId;
+            var appAuthInfo = db.AppAuths.FirstOrDefault(c => c.AppId == appId);
+            if(appAuthInfo != null)
+            {
+                appAuthInfo.LastUpdateOn = DateTime.Now;
+                appAuthInfo.Authorized = false;
+                db.SaveChanges();
+            }
             return base.OnUnauthorizedRequest(requestMessage);
         }
 
         public override string OnUpdateAuthorizedRequest(RequestMessageUpdateAuthorized requestMessage)
         {
-            
+            string appId = requestMessage.AppId;
+            var appAuthInfo = db.AppAuths.FirstOrDefault(c => c.AppId == appId);
+            if (appAuthInfo != null)
+            {
+                appAuthInfo.LastUpdateOn = DateTime.Now;
+                appAuthInfo.Authorized = true;
+                appAuthInfo.AuthorizerAppId = requestMessage.AuthorizerAppid;
+                appAuthInfo.Code = requestMessage.AuthorizationCode;
+                appAuthInfo.ExpiredTime = requestMessage.AuthorizationCodeExpiredTime;
+                db.SaveChanges();
+            }
             return base.OnUpdateAuthorizedRequest(requestMessage);
         }
     }

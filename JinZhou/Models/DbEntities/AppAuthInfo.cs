@@ -17,6 +17,20 @@ namespace JinZhou.Models.DbEntities
 
         public DateTime ExpiredTime { get; set; }
 
+        [MaxLength(80)]
+        public string AuthorizerAppId { get; set; }
+
         public bool Authorized { get; set; }
+
+        public DateTime CreateOn
+        {
+            get;
+            set;
+        }
+        public DateTime LastUpdateOn
+        {
+            get;
+            set;
+        }
     }
 }

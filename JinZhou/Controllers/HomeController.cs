@@ -49,6 +49,7 @@ namespace JinZhou.Controllers
 
         public IActionResult Install()
         {
+            //授权成功后返回的 /Home/Installed?auth_code=queryauthcode@@@tKlkuvs2i5XuP3wloLDuauVHnQ4kZdU6LPczHEAarkABxUURgl9hOy_YHb_Ndsn8uu6j6Uv1za9q1ecmHi4MvQ&expires_in=3600
             LogService.GetInstance().AddLog("Home:Install", null, "View The Page", "", "Info");
             HomeInstallViewModel vm = new HomeInstallViewModel();
             vm.WxAppId = _wxConfig.AppId;
