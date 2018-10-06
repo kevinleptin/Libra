@@ -9,7 +9,6 @@ namespace JinZhou.Models.DbEntities
     public class AppAuthInfo
     {
         [MaxLength(80)]
-        [Key]
         public string AppId { get; set; }
 
         [MaxLength(160)]
@@ -18,6 +17,7 @@ namespace JinZhou.Models.DbEntities
         public DateTime ExpiredTime { get; set; }
 
         [MaxLength(80)]
+        [Key]
         public string AuthorizerAppId { get; set; }
 
         public bool Authorized { get; set; }

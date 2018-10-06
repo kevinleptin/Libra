@@ -50,11 +50,11 @@ namespace JinZhou.Handler
         {
             // create new entity
             AppAuthInfo appInfo = new AppAuthInfo();
-            appInfo.AppId = requestMessage.AppId;
+            appInfo.AuthorizerAppId = requestMessage.AuthorizerAppid; // db table key
+            appInfo.AppId = requestMessage.AppId; // 第三方平台的 appid
             appInfo.Authorized = true;
             appInfo.Code = requestMessage.AuthorizationCode;
             appInfo.ExpiredTime = requestMessage.AuthorizationCodeExpiredTime;
-            appInfo.AuthorizerAppId = requestMessage.AuthorizerAppid;
             appInfo.CreateOn = DateTime.Now;
             appInfo.LastUpdateOn = DateTime.Now;
             db.AppAuths.Add(appInfo);
@@ -64,8 +64,8 @@ namespace JinZhou.Handler
 
         public override string OnUnauthorizedRequest(RequestMessageUnauthorized requestMessage)
         {
-            string appId = requestMessage.AppId;
-            var appAuthInfo = db.AppAuths.FirstOrDefault(c => c.AppId == appId);
+            string autherAppId = requestMessage.AuthorizerAppid;
+            var appAuthInfo = db.AppAuths.FirstOrDefault(c => c.AuthorizerAppId == autherAppId);
             if(appAuthInfo != null)
             {
                 appAuthInfo.LastUpdateOn = DateTime.Now;
@@ -77,8 +77,8 @@ namespace JinZhou.Handler
 
         public override string OnUpdateAuthorizedRequest(RequestMessageUpdateAuthorized requestMessage)
         {
-            string appId = requestMessage.AppId;
-            var appAuthInfo = db.AppAuths.FirstOrDefault(c => c.AppId == appId);
+            string autherAppId = requestMessage.AuthorizerAppid;
+            var appAuthInfo = db.AppAuths.FirstOrDefault(c => c.AuthorizerAppId == autherAppId);
             if (appAuthInfo != null)
             {
                 appAuthInfo.LastUpdateOn = DateTime.Now;
