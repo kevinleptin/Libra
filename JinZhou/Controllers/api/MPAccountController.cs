@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using JinZhou.Handler;
+using JinZhou.Models;
 using JinZhou.Models.Configuration;
 using JinZhou.Services;
 using Microsoft.AspNetCore.Http;
@@ -21,9 +22,10 @@ namespace JinZhou.Controllers.api
     public class MpAccountController : Controller
     {
         private readonly WxConfig _wxConfig;
-
-        public MpAccountController(IOptions<WxConfig> wxConfig)
+        private JzDbContext db;
+        public MpAccountController(IOptions<WxConfig> wxConfig, JzDbContext db)
         {
+            this.db = db;
             _wxConfig = wxConfig.Value;
         }
         /// <summary>
@@ -46,10 +48,8 @@ namespace JinZhou.Controllers.api
             pm.EncodingAESKey = _wxConfig.AesKey;
             
             // LogService.GetInstance().AddLog("MPAccount:Auth", "Thread" + Thread.CurrentThread.ManagedThreadId, "Query is "+Request.QueryString, "", "Info");
-            ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
-            ServicePointManager.CheckCertificateRevocationList = false;
-            
-            InsideMsgHandler handler = new InsideMsgHandler(Request.Body, _wxConfig, pm);
+          
+            InsideMsgHandler handler = new InsideMsgHandler(db, Request.Body, _wxConfig, pm);
             handler.Execute();
 
             LogService.GetInstance().AddLog("MPAccount:Auth", "Thread" + Thread.CurrentThread.ManagedThreadId, "End Handle Auth", "", "Info");

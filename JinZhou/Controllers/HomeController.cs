@@ -17,9 +17,11 @@ namespace JinZhou.Controllers
     public class HomeController : Controller
     {
         private readonly WxConfig _wxConfig;
-        public HomeController(IOptions<WxConfig> wxConfig)
+        private JzDbContext db = null;
+        public HomeController(IOptions<WxConfig> wxConfig, JzDbContext context)
         {
             _wxConfig = wxConfig.Value;
+            db = context;
         }
         public IActionResult Index()
         {
@@ -57,6 +59,9 @@ namespace JinZhou.Controllers
 
         public IActionResult WxComm()
         {
+            //for test db connection
+            CommEntityUpdater updater = new CommEntityUpdater(_wxConfig, db);
+
             HomeWxCommViewModel vm = new HomeWxCommViewModel();
             vm.AccessData = ComponentKeys.GetInstance().AccessData;
             vm.PreAuthData = ComponentKeys.GetInstance().PreAuthData;
