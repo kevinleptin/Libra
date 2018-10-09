@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Web;
 using Microsoft.AspNetCore.Mvc;
 using JinZhou.Models;
 using JinZhou.Models.CommEntity;
@@ -10,6 +11,8 @@ using JinZhou.Models.Configuration;
 using Microsoft.Extensions.Options;
 using JinZhou.Models.ViewModels;
 using JinZhou.Services;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Senparc.Weixin.Open.ComponentAPIs;
 
 namespace JinZhou.Controllers
@@ -45,6 +48,50 @@ namespace JinZhou.Controllers
         public IActionResult Error()
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+
+        public IActionResult UserAuth(string code, string state, string appid)
+        {
+            if (string.IsNullOrEmpty(appid))
+            {
+                return Content("无效的请求");
+            }
+
+            string wxAuthRedirectUri = Request.Scheme + Request.Host + "/Home/UserAuth";
+            string wxAuthUrlFmt =
+                "https://open.weixin.qq.com/connect/oauth2/authorize?appid={0}&redirect_uri={1}&response_type=code&scope=snsapi_userinfo&state={2}&component_appid={3}#wechat_redirect";
+            //state is null indicates it's first time to get here.
+            if (string.IsNullOrEmpty(state))
+            {
+                //第一次进入，跳转到微信授权页
+                string wxAuthUrl = string.Format(wxAuthUrlFmt, appid, HttpUtility.UrlEncode(wxAuthRedirectUri),
+                    "wxAuth1stStep", _wxConfig.AppId);
+                return Redirect(wxAuthUrl);
+            }
+
+            if (string.IsNullOrEmpty(code))
+            {// user reject the auth
+                return Content("用户未授权，无法继续。");
+            }
+            LogService.GetInstance().AddLog("/Home/UserAuth", null, "获得用户授权提供的code。开始获取accesstoken", "", "Info");
+            //通过code换取access_token
+            string wxAccessTokenUrlFmt =
+                "https://api.weixin.qq.com/sns/oauth2/component/access_token?appid={0}&code={1}&grant_type=authorization_code&component_appid={2}&component_access_token={3}";
+            string wxAccessTokenUrl = string.Format(wxAccessTokenUrlFmt, appid, code, _wxConfig.AppId,
+                ComponentKeys.GetInstance().AccessData.AccessCode);
+            string accessTokenJsonStr = Senparc.CO2NET.HttpUtility.RequestUtility.HttpGet(wxAccessTokenUrl, null);
+            var accessTokenJsonObj = JObject.Parse(accessTokenJsonStr);
+            var accessCode = accessTokenJsonObj.GetValue("access_token");
+            var openid = accessTokenJsonObj.GetValue("openid");
+
+            LogService.GetInstance().AddLog("/Home/UserAuth", null, "获取到Access code。开始获取用户信息", "", "Info");
+            //获取用户的基本信息
+            string wxUserInfoUrlFmt =
+                "https://api.weixin.qq.com/sns/userinfo?access_token={0}&openid={1}&lang=zh_CN";
+            string wxUserInfoUrl = string.Format(wxUserInfoUrlFmt, accessCode, openid);
+            string userInfoJsonStr = Senparc.CO2NET.HttpUtility.RequestUtility.HttpGet(wxUserInfoUrl, null);
+            var userInfoJsonObj = JObject.Parse(userInfoJsonStr);
+            return Content("您好，" + userInfoJsonObj.GetValue("nickname"));
         }
 
         public IActionResult Install()
