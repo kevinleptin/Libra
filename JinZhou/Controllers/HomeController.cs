@@ -57,7 +57,7 @@ namespace JinZhou.Controllers
                 return Content("无效的请求");
             }
 
-            string wxAuthRedirectUri = Request.Scheme + Request.Host + "/Home/UserAuth";
+            string wxAuthRedirectUri = _wxConfig.UserAuthRedirectUri;
             string wxAuthUrlFmt =
                 "https://open.weixin.qq.com/connect/oauth2/authorize?appid={0}&redirect_uri={1}&response_type=code&scope=snsapi_userinfo&state={2}&component_appid={3}#wechat_redirect";
             //state is null indicates it's first time to get here.
