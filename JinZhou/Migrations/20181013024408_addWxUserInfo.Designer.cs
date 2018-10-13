@@ -3,14 +3,16 @@ using System;
 using JinZhou.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace JinZhou.Migrations
 {
     [DbContext(typeof(JzDbContext))]
-    partial class JzDbContextModelSnapshot : ModelSnapshot
+    [Migration("20181013024408_addWxUserInfo")]
+    partial class addWxUserInfo
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

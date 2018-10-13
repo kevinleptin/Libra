@@ -14,6 +14,7 @@ using JinZhou.Services;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Senparc.Weixin.Open.ComponentAPIs;
+using JinZhou.Models.DbEntities;
 
 namespace JinZhou.Controllers
 {
@@ -91,8 +92,25 @@ namespace JinZhou.Controllers
             string wxUserInfoUrl = string.Format(wxUserInfoUrlFmt, accessCode, openid);
             string userInfoJsonStr = Senparc.CO2NET.HttpUtility.RequestUtility.HttpGet(wxUserInfoUrl, null);
             var userInfoJsonObj = JObject.Parse(userInfoJsonStr);
+            var wxUserinfoEntity = new WxUserInfo()
+            {
+                OpenId = userInfoJsonObj.GetValue("openid").ToString(),
+                NickName = userInfoJsonObj.GetValue("nickname").ToString(),
+                Sex = int.Parse(userInfoJsonObj.GetValue("sex").ToString()),
+                Country = userInfoJsonObj.GetValue("country").ToString(),
+                Province = userInfoJsonObj.GetValue("province").ToString(),
+                City = userInfoJsonObj.GetValue("city").ToString(),
+                HeadImgUrl = userInfoJsonObj.GetValue("headimgurl").ToString()
+            };
+            JToken unionIdProperty = null;
+            if(userInfoJsonObj.TryGetValue("unionid", out unionIdProperty))
+            {
+                wxUserinfoEntity.UnionId = unionIdProperty.ToString();
+            }
 
-            //TODO: save user info to db
+            db.WxUserInfos.Add(wxUserinfoEntity);
+            db.SaveChanges();
+
             return Content("您好，" + userInfoJsonObj.GetValue("nickname"));
         }
 

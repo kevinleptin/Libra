@@ -23,7 +23,4 @@
   <ItemGroup>
     <None Remove="m.sql" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Remove="Models\ViewModels\HomeInstalledViewModels.cs" />
-  </ItemGroup>
 </Project>

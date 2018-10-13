@@ -20,5 +20,12 @@ namespace JinZhou.Models
         public DbSet<AppAuthInfo> AppAuths { get; set; }
 
         public DbSet<AuthorizerInfo> AuthorizerInfos { get; set; }
+
+        public DbSet<WxUserInfo> WxUserInfos
+        {
+            get;
+            set;
+        }
+
     }
 }
