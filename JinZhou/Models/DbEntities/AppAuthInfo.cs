@@ -20,6 +20,10 @@ namespace JinZhou.Models.DbEntities
         [Key]
         public string AuthorizerAppId { get; set; }
 
+        /// <summary>
+        /// 标志此用户授权给组件网站的状态，0为取消授权，1为已授权
+        /// </summary>
+        /// <value><c>true</c> if authorized; otherwise, <c>false</c>.</value>
         public bool Authorized { get; set; }
 
         public DateTime CreateOn
@@ -28,6 +32,19 @@ namespace JinZhou.Models.DbEntities
             set;
         }
         public DateTime LastUpdateOn
+        {
+            get;
+            set;
+        }
+
+        public AuthorizerInfo Authorizer
+        {
+            get;
+            set;
+        }
+
+        [MaxLength(200)]
+        public string AuthorizerUserName
         {
             get;
             set;

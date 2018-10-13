@@ -19,5 +19,11 @@ namespace JinZhou.Models.Configuration
             get;
             set;
         }
+
+        public string UserAuthEntryPointUriFmt
+        {
+            get;
+            set;
+        }
     }
 }

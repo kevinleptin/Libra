@@ -10,6 +10,8 @@ using Senparc.Weixin.Open;
 using Senparc.Weixin.Open.Entities.Request;
 using Senparc.Weixin.Open.MessageHandlers;
 using JinZhou.Models.DbEntities;
+using JinZhou.Models.CommEntity;
+using Senparc.Weixin.Open.ComponentAPIs;
 
 namespace JinZhou.Handler
 {
@@ -57,6 +59,29 @@ namespace JinZhou.Handler
             appInfo.ExpiredTime = requestMessage.AuthorizationCodeExpiredTime;
             appInfo.CreateOn = DateTime.Now;
             appInfo.LastUpdateOn = DateTime.Now;
+
+            //,
+            var authorizerInfoResult = ComponentApi.GetAuthorizerInfo(ComponentKeys.GetInstance().AccessData.AccessCode, _wxConfig.AppId, requestMessage.AuthorizerAppid);
+            var authorizerInfo = authorizerInfoResult.authorizer_info;
+            var authorizerInfoEntity = new JinZhou.Models.DbEntities.AuthorizerInfo()
+            {
+                UserName = authorizerInfo.user_name,
+                NickName = authorizerInfo.nick_name,
+                HeadImg = authorizerInfo.head_img,
+                ServiceType = (int)authorizerInfo.service_type_info.id,
+                VerifyType = (int)authorizerInfo.verify_type_info.id,
+                PrincipalName = authorizerInfo.principal_name,
+                BizStore = authorizerInfo.business_info.open_store,
+                BizPay = authorizerInfo.business_info.open_pay,
+                BizCard = authorizerInfo.business_info.open_card,
+                BizScan = authorizerInfo.business_info.open_scan,
+                BizShake = authorizerInfo.business_info.open_shake,
+                Alias = authorizerInfo.alias,
+                QrcodeUrl = authorizerInfo.qrcode_url
+            };
+
+            appInfo.Authorizer = authorizerInfoEntity;
+
             db.AppAuths.Add(appInfo);
             db.SaveChanges();
             return base.OnAuthorizedRequest(requestMessage);
@@ -87,7 +112,11 @@ namespace JinZhou.Handler
                 appAuthInfo.Code = requestMessage.AuthorizationCode;
                 appAuthInfo.ExpiredTime = requestMessage.AuthorizationCodeExpiredTime;
                 db.SaveChanges();
+
+                //todo: 增加authorizer的信息更新
             }
+
+
             return base.OnUpdateAuthorizedRequest(requestMessage);
         }
     }

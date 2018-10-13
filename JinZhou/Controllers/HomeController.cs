@@ -91,6 +91,8 @@ namespace JinZhou.Controllers
             string wxUserInfoUrl = string.Format(wxUserInfoUrlFmt, accessCode, openid);
             string userInfoJsonStr = Senparc.CO2NET.HttpUtility.RequestUtility.HttpGet(wxUserInfoUrl, null);
             var userInfoJsonObj = JObject.Parse(userInfoJsonStr);
+
+            //TODO: save user info to db
             return Content("您好，" + userInfoJsonObj.GetValue("nickname"));
         }
 
@@ -102,6 +104,17 @@ namespace JinZhou.Controllers
             vm.WxAppId = _wxConfig.AppId;
             vm.RedirectUri = _wxConfig.RedirectUri;
             vm.PreAuthCode = ComponentKeys.GetInstance().PreAuthData.PreAuthCode;
+            return View(vm);
+        }
+
+        public IActionResult Installed(string auth_code, int expires_in)
+        {
+            LogService.GetInstance().AddLog("Home:Installed", null, "Auth succeed", "", "Info");
+
+            var authorizerAppid = db.AppAuths.FirstOrDefault(c => c.Code == auth_code).AuthorizerAppId;
+            HomeInstalledViewModels vm = new HomeInstalledViewModels();
+            vm.AuthorizerAppId = authorizerAppid;
+            vm.AuthUrl = string.Format(_wxConfig.UserAuthEntryPointUriFmt, authorizerAppid);
             return View(vm);
         }
 

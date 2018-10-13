@@ -18,5 +18,7 @@ namespace JinZhou.Models
         public DbSet<BasicToken> BasicTokens { get; set; }
 
         public DbSet<AppAuthInfo> AppAuths { get; set; }
+
+        public DbSet<AuthorizerInfo> AuthorizerInfos { get; set; }
     }
 }
