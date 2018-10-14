@@ -129,7 +129,61 @@ namespace JinZhou.Controllers
         {
             LogService.GetInstance().AddLog("Home:Installed", null, "Auth succeed", "", "Info");
 
-            var authorizerAppid = db.AppAuths.FirstOrDefault(c => c.Code == auth_code).AuthorizerAppId;
+            var queryAuth = Senparc.Weixin.Open.ComponentAPIs.ComponentApi.QueryAuth(ComponentKeys.GetInstance().AccessData.AccessCode,
+                _wxConfig.AppId, auth_code);
+
+            string authorizerAppid = queryAuth.authorization_info.authorizer_appid;
+            var authorizer = db.AppAuths.FirstOrDefault(c => c.AuthorizerAppId == authorizerAppid);
+            if (authorizer == null || authorizer.Code != auth_code)
+            {
+                if (authorizer == null)
+                {
+                    authorizer = new AppAuthInfo();
+                    authorizer.AppId = _wxConfig.AppId;
+                    authorizer.AuthorizerAppId = queryAuth.authorization_info.authorizer_appid;
+                    authorizer.Authorized = true;
+                    authorizer.CreateOn = DateTime.Now;
+
+                    var authorizerInfoResult = ComponentApi.GetAuthorizerInfo(ComponentKeys.GetInstance().AccessData.AccessCode, _wxConfig.AppId, queryAuth.authorization_info.authorizer_appid);
+                    var authorizerInfo = authorizerInfoResult.authorizer_info;
+                    var authorizerInfoEntity =
+                        db.AuthorizerInfos.FirstOrDefault(c => c.UserName == authorizerInfo.user_name);
+                    if (authorizerInfoEntity == null)
+                    {
+                        authorizerInfoEntity = new JinZhou.Models.DbEntities.AuthorizerInfo()
+                        {
+                            UserName = authorizerInfo.user_name,
+                            NickName = authorizerInfo.nick_name,
+                            HeadImg = authorizerInfo.head_img,
+                            ServiceType = (int) authorizerInfo.service_type_info.id,
+                            VerifyType = (int) authorizerInfo.verify_type_info.id,
+                            PrincipalName = authorizerInfo.principal_name,
+                            BizStore = authorizerInfo.business_info.open_store,
+                            BizPay = authorizerInfo.business_info.open_pay,
+                            BizCard = authorizerInfo.business_info.open_card,
+                            BizScan = authorizerInfo.business_info.open_scan,
+                            BizShake = authorizerInfo.business_info.open_shake,
+                            Alias = authorizerInfo.alias,
+                            QrcodeUrl = authorizerInfo.qrcode_url
+                        };
+                    }
+
+                    authorizer.Authorizer = authorizerInfoEntity;
+                    //TODO: 这里应该存储以下信息，并自动刷新
+                    //todo: queryAuth.authorization_info.authorizer_access_token
+                    //TODO: queryAuth.authorization_info.authorizer_refresh_token 
+
+                    //todo: 网站加入性能监控的组件，方便了解网站的运行状态
+
+                    db.AppAuths.Add(authorizer);
+                }
+                //need update
+                authorizer.Code = auth_code;
+                authorizer.ExpiredTime = DateTime.Now.AddSeconds(queryAuth.authorization_info.expires_in);
+                authorizer.LastUpdateOn = DateTime.Now;
+                db.SaveChanges();
+            }
+
             HomeInstalledViewModels vm = new HomeInstalledViewModels();
             vm.AuthorizerAppId = authorizerAppid;
             vm.AuthUrl = string.Format(_wxConfig.UserAuthEntryPointUriFmt, authorizerAppid);

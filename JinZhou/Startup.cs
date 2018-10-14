@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using JinZhou.Middlewares;
 using JinZhou.Models;
 using JinZhou.Models.Configuration;
 using Microsoft.AspNetCore.Builder;
@@ -45,6 +46,8 @@ namespace JinZhou
             {
                 app.UseExceptionHandler("/Home/Error");
             }
+
+            //app.UseMiddleware<RequestMiddlewares>();
 
             app.UseStaticFiles();
 

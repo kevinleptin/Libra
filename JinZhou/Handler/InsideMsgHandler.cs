@@ -103,6 +103,7 @@ namespace JinZhou.Handler
         public override string OnUpdateAuthorizedRequest(RequestMessageUpdateAuthorized requestMessage)
         {
             string autherAppId = requestMessage.AuthorizerAppid;
+            LogService.GetInstance().AddLog("OnUpdateAuthRequest", null, "auther appid is "+autherAppId, "","info");
             var appAuthInfo = db.AppAuths.FirstOrDefault(c => c.AuthorizerAppId == autherAppId);
             if (appAuthInfo != null)
             {
@@ -114,6 +115,10 @@ namespace JinZhou.Handler
                 db.SaveChanges();
 
                 //todo: 增加authorizer的信息更新
+            }
+            else
+            {
+                Console.WriteLine("can't find auth info for appid "+autherAppId);
             }
 
 
