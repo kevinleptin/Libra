@@ -121,24 +121,29 @@ namespace JinZhou.Controllers
                 LogService.GetInstance().AddLog("state", null, wxUserInfoUrl, "", "VISIT");
                 string userInfoJsonStr = client.GetStringAsync(wxUserInfoUrl).Result; //Senparc.CO2NET.HttpUtility.RequestUtility.HttpGet(wxUserInfoUrl, null);
                 var userInfoJsonObj = JObject.Parse(userInfoJsonStr);
-                var wxUserinfoEntity = new WxUserInfo()
+                string openIdStr = openid.ToString();
+                var wxUserinfoEntity = db.WxUserInfos.FirstOrDefault(c => c.OpenId == openIdStr);
+                if (wxUserinfoEntity == null)
                 {
-                    OpenId = userInfoJsonObj.GetValue("openid").ToString(),
-                    NickName = userInfoJsonObj.GetValue("nickname").ToString(),
-                    Sex = int.Parse(userInfoJsonObj.GetValue("sex").ToString()),
-                    Country = userInfoJsonObj.GetValue("country").ToString(),
-                    Province = userInfoJsonObj.GetValue("province").ToString(),
-                    City = userInfoJsonObj.GetValue("city").ToString(),
-                    HeadImgUrl = userInfoJsonObj.GetValue("headimgurl").ToString()
-                };
-                JToken unionIdProperty = null;
-                if (userInfoJsonObj.TryGetValue("unionid", out unionIdProperty))
-                {
-                    wxUserinfoEntity.UnionId = unionIdProperty.ToString();
-                }
+                    wxUserinfoEntity = new WxUserInfo()
+                    {
+                        OpenId = userInfoJsonObj.GetValue("openid").ToString(),
+                        NickName = userInfoJsonObj.GetValue("nickname").ToString(),
+                        Sex = int.Parse(userInfoJsonObj.GetValue("sex").ToString()),
+                        Country = userInfoJsonObj.GetValue("country").ToString(),
+                        Province = userInfoJsonObj.GetValue("province").ToString(),
+                        City = userInfoJsonObj.GetValue("city").ToString(),
+                        HeadImgUrl = userInfoJsonObj.GetValue("headimgurl").ToString()
+                    };
+                    JToken unionIdProperty = null;
+                    if (userInfoJsonObj.TryGetValue("unionid", out unionIdProperty))
+                    {
+                        wxUserinfoEntity.UnionId = unionIdProperty.ToString();
+                    }
 
-                db.WxUserInfos.Add(wxUserinfoEntity);
-                db.SaveChanges();
+                    db.WxUserInfos.Add(wxUserinfoEntity);
+                    db.SaveChanges();
+                }
 
                 return Content("您好，" + userInfoJsonObj.GetValue("nickname"));
             }
