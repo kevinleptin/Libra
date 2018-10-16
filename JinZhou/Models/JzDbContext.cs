@@ -21,6 +21,8 @@ namespace JinZhou.Models
 
         public DbSet<AuthorizerInfo> AuthorizerInfos { get; set; }
 
+        public DbSet<AuthorizerToken> AuthorizerTokens { get; set; }
+
         public DbSet<WxUserInfo> WxUserInfos
         {
             get;
