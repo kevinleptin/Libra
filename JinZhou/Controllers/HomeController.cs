@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using System.Web;
 using Microsoft.AspNetCore.Mvc;
@@ -89,14 +91,22 @@ namespace JinZhou.Controllers
                 LogService.GetInstance().AddLog("state", null, wxAccessTokenUrl, "", "VISIT");
                 LogService.GetInstance().AddLog("state", null, "access token is "+ComponentKeys.GetInstance().AccessData.AccessCode, "", "AccessCode");
                 string accessTokenJsonStr = string.Empty;
+
+                var handler = new HttpClientHandler();
+
+                handler.ServerCertificateCustomValidationCallback = new Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool>(CheckValidationResult);
+                HttpClient client = new HttpClient(handler);
                 try
                 {//TODO:解决SSL GET的问题
-                    HttpClient client = new HttpClient();
-                    accessTokenJsonStr = Senparc.CO2NET.HttpUtility.RequestUtility.HttpGet(wxAccessTokenUrl, null);
+                    
+
+                    accessTokenJsonStr =
+                        client.GetStringAsync(wxAccessTokenUrl)
+                            .Result; //Senparc.CO2NET.HttpUtility.RequestUtility.HttpGet(wxAccessTokenUrl, null);
                 }
                 catch (Exception reqEx)
                 {
-
+                    LogService.GetInstance().AddLog("state", null, "access token get failed "+reqEx.Message, null, "Exception");
                 }
 
                 var accessTokenJsonObj = JObject.Parse(accessTokenJsonStr);
@@ -109,7 +119,7 @@ namespace JinZhou.Controllers
                     "https://api.weixin.qq.com/sns/userinfo?access_token={0}&openid={1}&lang=zh_CN";
                 string wxUserInfoUrl = string.Format(wxUserInfoUrlFmt, accessCode, openid);
                 LogService.GetInstance().AddLog("state", null, wxUserInfoUrl, "", "VISIT");
-                string userInfoJsonStr = Senparc.CO2NET.HttpUtility.RequestUtility.HttpGet(wxUserInfoUrl, null);
+                string userInfoJsonStr = client.GetStringAsync(wxUserInfoUrl).Result; //Senparc.CO2NET.HttpUtility.RequestUtility.HttpGet(wxUserInfoUrl, null);
                 var userInfoJsonObj = JObject.Parse(userInfoJsonStr);
                 var wxUserinfoEntity = new WxUserInfo()
                 {
@@ -136,6 +146,11 @@ namespace JinZhou.Controllers
             {
                 return Content(e.ToString());
             }
+        }
+
+        private static bool CheckValidationResult(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors errors)
+        {
+            return true;
         }
 
         public IActionResult Install()
