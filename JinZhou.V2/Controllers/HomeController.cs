@@ -84,14 +84,16 @@ namespace JinZhou.V2.Controllers
             if (token == null)
             {
                 token = new MpToken();
+                token.MpAppId = authorizerAppid;
                 db.MpTokens.Add(token);
             }
-
+            
             token.RefreshOn = DateTime.Now;
             token.MpAccessToken = queryAuth.authorization_info.authorizer_access_token;
             token.MpRefreshToken = queryAuth.authorization_info.authorizer_refresh_token;
             token.ExpiredIn = queryAuth.authorization_info.expires_in;
             token.BelongToMp = authorizerInfoEntity;
+
             db.SaveChanges();
 
 
