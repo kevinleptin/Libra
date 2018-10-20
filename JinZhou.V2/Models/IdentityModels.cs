@@ -28,6 +28,7 @@ namespace JinZhou.V2.Models
         public DbSet<ComponentToken> ComponentTokens { get; set; }
         public DbSet<MpToken> MpTokens { get; set; }
         public DbSet<MpInfo> MpInfos { get; set; }
+        public DbSet<WxUserInfo> WxUserInfos { get; set; }
 
         public static ApplicationDbContext Create()
         {

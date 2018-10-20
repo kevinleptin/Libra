@@ -2,11 +2,15 @@
 using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 using System.Web;
 using System.Web.Mvc;
 using JinZhou.V2.Models;
 using JinZhou.V2.Models.ViewModels;
 using JinZhou.V2.Services;
+using Newtonsoft.Json.Linq;
 using Senparc.Weixin.Open.ComponentAPIs;
 
 namespace JinZhou.V2.Controllers
@@ -29,6 +33,96 @@ namespace JinZhou.V2.Controllers
             ViewBag.Message = "Your application description page.";
 
             return View();
+        }
+
+        public ActionResult UserAuth(string code, string state, string appid)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(appid))
+                {
+                    return Content("无效的请求");
+                }
+
+                string componentAppId = ConfigurationManager.AppSettings["AppId"];
+                var componentToken = ComponentTokenService.GetInstance().Token;
+                string wxAuthRedirectUri = ConfigurationManager.AppSettings["UserAuthRedirectUri"];
+                string wxAuthUrlFmt =
+                    "https://open.weixin.qq.com/connect/oauth2/authorize?appid={0}&redirect_uri={1}&response_type=code&scope=snsapi_userinfo&state={2}&component_appid={3}#wechat_redirect";
+                //state is null indicates it's first time to get here.
+                if (string.IsNullOrEmpty(state))
+                {
+                    //第一次进入，跳转到微信授权页
+                    string wxAuthUrl = string.Format(wxAuthUrlFmt, appid, HttpUtility.UrlEncode(wxAuthRedirectUri),
+                        "wxAuth1stStep", componentAppId);
+
+                    return Redirect(wxAuthUrl);
+                }
+
+                if (string.IsNullOrEmpty(code))
+                {
+                    // user reject the auth
+                    return Content("用户未授权，无法继续。");
+                }
+
+                
+                //通过code换取access_token
+                
+                string wxAccessTokenUrlFmt =
+                    "https://api.weixin.qq.com/sns/oauth2/component/access_token?appid={0}&code={1}&grant_type=authorization_code&component_appid={2}&component_access_token={3}";
+                string wxAccessTokenUrl = string.Format(wxAccessTokenUrlFmt, appid, code, componentAppId,
+                    componentToken.ComponentAccessToken);
+                
+                string accessTokenJsonStr = string.Empty;
+
+                HttpClient client = new HttpClient();
+                
+                    accessTokenJsonStr =
+                        client.GetStringAsync(wxAccessTokenUrl)
+                            .Result; //Senparc.CO2NET.HttpUtility.RequestUtility.HttpGet(wxAccessTokenUrl, null);
+               
+
+                var accessTokenJsonObj = JObject.Parse(accessTokenJsonStr);
+                var accessCode = accessTokenJsonObj.GetValue("access_token");
+                var openid = accessTokenJsonObj.GetValue("openid");
+                
+                //获取用户的基本信息
+                string wxUserInfoUrlFmt =
+                    "https://api.weixin.qq.com/sns/userinfo?access_token={0}&openid={1}&lang=zh_CN";
+                string wxUserInfoUrl = string.Format(wxUserInfoUrlFmt, accessCode, openid);
+
+                string userInfoJsonStr = client.GetStringAsync(wxUserInfoUrl).Result; //Senparc.CO2NET.HttpUtility.RequestUtility.HttpGet(wxUserInfoUrl, null);
+                var userInfoJsonObj = JObject.Parse(userInfoJsonStr);
+                string openIdStr = openid.ToString();
+                var wxUserinfoEntity = db.WxUserInfos.FirstOrDefault(c => c.OpenId == openIdStr);
+                if (wxUserinfoEntity == null)
+                {
+                    wxUserinfoEntity = new WxUserInfo()
+                    {
+                        OpenId = userInfoJsonObj.GetValue("openid").ToString(),
+                        NickName = userInfoJsonObj.GetValue("nickname").ToString(),
+                        Sex = int.Parse(userInfoJsonObj.GetValue("sex").ToString()),
+                        Country = userInfoJsonObj.GetValue("country").ToString(),
+                        Province = userInfoJsonObj.GetValue("province").ToString(),
+                        City = userInfoJsonObj.GetValue("city").ToString(),
+                        HeadImgUrl = userInfoJsonObj.GetValue("headimgurl").ToString()
+                    };
+                    JToken unionIdProperty = null;
+                    if (userInfoJsonObj.TryGetValue("unionid", out unionIdProperty))
+                    {
+                        wxUserinfoEntity.UnionId = unionIdProperty.ToString();
+                    }
+
+                    db.WxUserInfos.Add(wxUserinfoEntity);
+                    db.SaveChanges();
+                }
+
+                return Content("您好，" + userInfoJsonObj.GetValue("nickname"));
+            }
+            catch (Exception e)
+            {
+                return Content(e.ToString());
+            }
         }
 
         public ActionResult Install()
