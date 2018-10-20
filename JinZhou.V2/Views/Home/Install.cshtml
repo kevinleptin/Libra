@@ -1,0 +1,12 @@
+﻿@model JinZhou.V2.Models.ViewModels.HomeInstallViewModel
+@{
+    ViewData["Title"] = "Install";
+    string urlFormat = "https://mp.weixin.qq.com/cgi-bin/componentloginpage?component_appid={0}&pre_auth_code={1}&redirect_uri={2}";
+    string installUrl = string.Format(urlFormat, Model.WxAppId, Model.PreAuthCode, Model.RedirectUri);
+}
+
+<h2>Install @Model.WxAppId</h2>
+<a href="@installUrl">
+    Install
+</a>
+
