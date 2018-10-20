@@ -24,7 +24,7 @@ namespace JinZhou.V2.Models
         [MaxLength(100)]
         public string ComponentVerifyTicket { get; set; }
 
-        [MaxLength(100)]
+        [MaxLength(160)]
         public string ComponentAccessToken { get; set; }
         public int ComponentAccessTokenExpiresIn { get; set; }
         public DateTime ComponentAccessTokenCreateOn { get; set; }
