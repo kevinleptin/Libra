@@ -35,7 +35,7 @@ namespace JinZhou.V2.Controllers
             return View();
         }
 
-        public ActionResult UserAuth(string code, string state, string appid)
+        public ActionResult UserAuth(string code, string state, string appid, string returnUrl)
         {
             try
             {
@@ -44,16 +44,24 @@ namespace JinZhou.V2.Controllers
                     return Content("无效的请求");
                 }
 
+                if (string.IsNullOrEmpty(returnUrl))
+                {
+                    return Content("Error: can't find url parameter <b>returnUrl</b>");
+                }
+
+                //TODO: verify if returnUrl domain is legal or not.
+
                 string componentAppId = ConfigurationManager.AppSettings["AppId"];
                 var componentToken = ComponentTokenService.GetInstance().Token;
-                string wxAuthRedirectUri = ConfigurationManager.AppSettings["UserAuthRedirectUri"];
+                string wxAuthRedirectUri = ConfigurationManager.AppSettings["UserAuthRedirectUri"]+"?returnUrl="+returnUrl;
                 string wxAuthUrlFmt =
                     "https://open.weixin.qq.com/connect/oauth2/authorize?appid={0}&redirect_uri={1}&response_type=code&scope=snsapi_userinfo&state={2}&component_appid={3}#wechat_redirect";
                 //state is null indicates it's first time to get here.
                 if (string.IsNullOrEmpty(state))
                 {
+                    //throw new Exception("wx based on "+ wxAuthRedirectUri);
                     //第一次进入，跳转到微信授权页
-                    string wxAuthUrl = string.Format(wxAuthUrlFmt, appid, HttpUtility.UrlEncode(wxAuthRedirectUri),
+                    string wxAuthUrl = string.Format(wxAuthUrlFmt, appid, HttpUtility.UrlEncode(wxAuthRedirectUri).Replace("+", "%20"),
                         "wxAuth1stStep", componentAppId);
 
                     return Redirect(wxAuthUrl);
@@ -117,12 +125,41 @@ namespace JinZhou.V2.Controllers
                     db.SaveChanges();
                 }
 
-                return Content("您好，" + userInfoJsonObj.GetValue("nickname"));
+                string decodeReturnUrl = HttpUtility.UrlDecode(returnUrl);
+                //append infos
+                
+                string redirectUrl = appendUserInfo(decodeReturnUrl, userInfoJsonObj);
+
+                return Redirect(redirectUrl);
             }
             catch (Exception e)
             {
                 return Content(e.ToString());
             }
+        }
+
+        private string appendUserInfo(string url, JObject userInfo)
+        {
+            string nickName = userInfo.GetValue("nickname").ToString();
+            if (!string.IsNullOrEmpty(nickName))
+            {
+                nickName = HttpUtility.UrlEncode(nickName).Replace("+", "%20");
+            }
+
+            string headImgUrl = userInfo.GetValue("headimgurl").ToString();
+            if (!string.IsNullOrEmpty(headImgUrl))
+            {
+                headImgUrl = HttpUtility.UrlEncode(headImgUrl).Replace("+", "%20");
+            }
+            bool alreadyHasUrlParameter = url.Contains("?");
+            url += alreadyHasUrlParameter
+                ? "&nickname=" + nickName
+                : "?nickname=" + nickName;
+            url += "&openid=" + userInfo.GetValue("openid");
+            url += "&headimgurl=" + headImgUrl;
+            url += "&sex=" + userInfo.GetValue("sex");
+
+            return url;
         }
 
         public ActionResult Install()
