@@ -49,6 +49,11 @@ namespace JinZhou.V2.Controllers
                     return Content("Error: can't find url parameter <b>returnUrl</b>");
                 }
 
+                if (returnUrl.Contains("%") == false)
+                {
+                    returnUrl = HttpUtility.UrlEncode(returnUrl).Replace("+", "%20");
+                }
+
                 //TODO: verify if returnUrl domain is legal or not.
 
                 string componentAppId = ConfigurationManager.AppSettings["AppId"];
