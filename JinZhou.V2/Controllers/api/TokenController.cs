@@ -22,6 +22,22 @@ namespace JinZhou.V2.Controllers.api
             _context = ApplicationDbContext.Create();
         }
 
+        [HttpPost, Route("api/install/entryurl")]
+        public IHttpActionResult RetrieveInstallUrl()
+        {
+            
+            var WxAppId = ConfigurationManager.AppSettings["AppId"];
+            var RedirectUri = ConfigurationManager.AppSettings["RedirectUri"];
+            var PreAuthCode = ComponentTokenService.GetInstance().Token.PreAuthCode;
+
+            string urlFormat = "https://mp.weixin.qq.com/cgi-bin/componentloginpage?component_appid={0}&pre_auth_code={1}&redirect_uri={2}";
+            string installUrl = string.Format(urlFormat, WxAppId, PreAuthCode, RedirectUri);
+
+            var result = new {installUrl = installUrl};
+
+            return Ok(result);
+        }
+
         [HttpPost, Route("MPAccount/Auth")]
         public IHttpActionResult RefreshVerifyToken()
         {
