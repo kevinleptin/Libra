@@ -262,6 +262,15 @@
     <Content Include="Content\bootstrap-theme.min.css" />
     <Content Include="Content\bootstrap.css" />
     <Content Include="Content\bootstrap.min.css" />
+    <Content Include="END\img\bg.jpg" />
+    <Content Include="END\img\logo.ico" />
+    <Content Include="END\index.html" />
+    <Content Include="END\js\zepto.min.js" />
+    <Content Include="FACE\img\bg.jpg" />
+    <Content Include="FACE\img\btn.png" />
+    <Content Include="FACE\img\logo.ico" />
+    <Content Include="FACE\index.html" />
+    <Content Include="FACE\js\zepto.min.js" />
     <Content Include="favicon.ico" />
     <Content Include="fonts\glyphicons-halflings-regular.svg" />
     <Content Include="Global.asax" />

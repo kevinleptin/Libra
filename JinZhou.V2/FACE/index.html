@@ -1,0 +1,69 @@
+﻿<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<script language="javascript" id="temp">document.write('<meta name="viewport" content="width=640, initial-scale='+window.screen.width/640+',user-scalable=no, target-densitydpi=device-dpi">');
+console.log("%c webhost ",'background: #DB2020;color: #FFF');</script>
+<style>body{ background-color:#000;margin:0px;}.abs{position:absolute;}.fix{position:fixed;}.wh{}</style>
+<link rel="icon" href="img/logo.ico" type="image/x-icon">
+<link rel="shortcut icon" href="img/logo.ico" type="image/x-icon">
+<title></title>
+<script src="js/zepto.min.js"></script>
+</head>
+<body>
+	<div id="box" class="abs">
+    	<div id="nei" class="abs">
+            <img id="bg" class="abs" src="img/bg.jpg" width="640" height="1385">
+            <img id="ks" class="abs" src="img/btn.png" width="212" height="53" style="top:1090px; left:215px; cursor:pointer" > 
+        </div>
+    </div>
+</body>
+<script>
+function resizeF()
+{
+	window.scroll(0,0)
+	
+	var ww=$(window).width(),hh=$(window).height()
+	
+	$("#box").css({"width":640,"height":hh,"overflow":"hidden"})
+	
+	$("#box").css({"left":(ww-640)*.5})	
+	if(ww>640)
+	{
+		$("#nei").css({"top":0})
+		$("#box").css("height",1385)
+	}
+	else
+	{
+		$("#nei").css({"top":(hh-1385)*.5})
+	}
+	
+}
+function ksF(e)
+{
+	$("#ks").unbind("touchstart")
+	$("#ks").unbind("mousedown")
+	
+	$("#ks").css({"opacity":".3","cursor":"default"})
+	$.ajax({
+		type	: "post",
+		url		: '/api/install/entryurl',
+		dataType: "json",
+		data	: {},
+		success	:function(data){window.location.href=data.installUrl},
+		error	:function(e){}
+	}); 
+}
+
+$("document").ready(function(e) 
+{	
+	document.body.addEventListener('touchmove',function (e) {e.preventDefault();}, false);
+	document.getElementById("bg").addEventListener('touchmove',function (e) {e.preventDefault();}, false);
+	
+	resizeF();
+	$(window).resize(resizeF);
+	
+	$("#ks").on("touchstart",ksF)
+	$("#ks").on("mousedown",ksF)
+});
+</script>
+</html>

@@ -1,0 +1,56 @@
+﻿<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<script language="javascript" id="temp">document.write('<meta name="viewport" content="width=640, initial-scale='+window.screen.width/640+',user-scalable=no, target-densitydpi=device-dpi">');
+console.log("%c webhost ",'background: #DB2020;color: #FFF');</script>
+<style>body{ background-color:#000;margin:0px;}.abs{position:absolute;}.fix{position:fixed;}.wh{}</style>
+<link rel="icon" href="img/logo.ico" type="image/x-icon">
+<link rel="shortcut icon" href="img/logo.ico" type="image/x-icon">
+<title></title>
+<script src="js/zepto.min.js"></script>
+</head>
+<body>
+	<div id="box" class="abs">
+    	<div id="nei" class="abs">
+            <img id="bg" class="abs" src="img/bg.jpg" width="640" height="1385">
+            <div id="appId" class="abs" style="width:440px; height:60px; line-height:60px; top:715px; left:100px; font-size:36px; font-family:Arial, Helvetica, sans-serif; text-align:center"></div>
+        </div>
+    </div>
+</body>
+<script>
+function resizeF()
+{
+	window.scroll(0,0)
+	
+	var ww=$(window).width(),hh=$(window).height()
+	
+	$("#box").css({"width":640,"height":hh,"overflow":"hidden"})
+	
+	$("#box").css({"left":(ww-640)*.5})	
+	if(ww>640)
+	{
+		$("#nei").css({"top":0})
+		$("#box").css("height",1385)
+	}
+	else
+	{
+		$("#nei").css({"top":(hh-1385)*.5})
+	}	
+}
+function getArgument(_arg)
+{
+    var _t=window.location.href.split("?");if(_t.length>1) {var reg = new RegExp("(^|&)"+ _arg +"=([^&]*)(&|$)");var r = _t[1].match(reg); if(r!=null){return  r[2]}; return ""; }return "";
+}
+
+$("document").ready(function(e) 
+{	
+	document.body.addEventListener('touchmove',function (e) {e.preventDefault();}, false);
+	document.getElementById("bg").addEventListener('touchmove',function (e) {e.preventDefault();}, false);
+	
+	resizeF();
+	$(window).resize(resizeF);
+	
+	$("#appId").append(getArgument("appid"))
+});
+</script>
+</html>

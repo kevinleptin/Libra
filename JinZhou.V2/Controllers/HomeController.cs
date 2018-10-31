@@ -235,10 +235,11 @@ namespace JinZhou.V2.Controllers
 
 
 
-            HomeInstalledViewModel vm = new HomeInstalledViewModel();
-            vm.AuthorizerAppId = authorizerAppid;
-            vm.AuthUrl = string.Format(ConfigurationManager.AppSettings["UserAuthEntryPointUriFmt"], authorizerAppid);
-            return View(vm);
+            //HomeInstalledViewModel vm = new HomeInstalledViewModel();
+            //vm.AuthorizerAppId = authorizerAppid;
+            //vm.AuthUrl = string.Format(ConfigurationManager.AppSettings["UserAuthEntryPointUriFmt"], authorizerAppid);
+            string redirectUrl = string.Format(ConfigurationManager.AppSettings["InstallSuccessUrl"], authorizerAppid);
+            return Redirect(redirectUrl);
         }
     }
 }
