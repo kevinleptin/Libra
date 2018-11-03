@@ -2,9 +2,12 @@
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Threading;
+using System.Web.Hosting;
 using System.Web.Http;
 using JinZhou.V2.Handler;
 using JinZhou.V2.Models;
@@ -22,9 +25,16 @@ namespace JinZhou.V2.Controllers.api
             _context = ApplicationDbContext.Create();
         }
 
-        [HttpPost, Route("api/token/test")]
-        public IHttpActionResult TestApi()
+        [HttpPost, Route("api/token/test/{id:int}")]
+        public IHttpActionResult TestApi(int? id)
         {
+            if (id.HasValue)
+            {
+                string logFileName = DateTime.Now.ToFileTimeUtc().ToString()+"th"+Thread.CurrentThread.ManagedThreadId+".txt";
+                string absFileName = HostingEnvironment.MapPath("~/logs/" + logFileName);
+                File.WriteAllText(absFileName, "test Api");
+            }
+
             int step = 0;
             if (ComponentTokenService.GetInstance() == null)
             {

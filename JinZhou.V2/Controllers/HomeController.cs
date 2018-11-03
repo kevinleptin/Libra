@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using System.Web;
 using System.Web.Mvc;
 using JinZhou.V2.Models;
@@ -167,7 +168,12 @@ namespace JinZhou.V2.Controllers
             }
             catch (Exception e)
             {
-                return Content("step."+step+", "+ e.ToString());
+                string msg = "step." + step + ", " + e.ToString();
+                string logFileName = DateTime.Now.ToFileTimeUtc().ToString() + "th" + Thread.CurrentThread.ManagedThreadId + ".txt";
+                string absFileName = Server.MapPath("~/logs/" + logFileName);
+                System.IO.File.WriteAllText(absFileName, msg);
+                
+                return Content("error code: "+step);
             }
         }
 
