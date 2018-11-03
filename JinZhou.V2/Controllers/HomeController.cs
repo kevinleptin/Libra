@@ -37,6 +37,7 @@ namespace JinZhou.V2.Controllers
 
         public ActionResult UserAuth(string code, string state, string appid, string returnUrl)
         {
+            int step = 0;
             try
             {
                 if (string.IsNullOrEmpty(appid))
@@ -57,7 +58,15 @@ namespace JinZhou.V2.Controllers
                 //TODO: verify if returnUrl domain is legal or not.
 
                 string componentAppId = ConfigurationManager.AppSettings["AppId"];
+                if (ComponentTokenService.GetInstance() == null)
+                {
+                    step = 9001;
+                }
                 var componentToken = ComponentTokenService.GetInstance().Token;
+                if (componentToken == null)
+                {
+                    step = 9002;
+                }
                 string wxAuthRedirectUri = ConfigurationManager.AppSettings["UserAuthRedirectUri"]+"?returnUrl="+returnUrl;
                 string wxAuthUrlFmt =
                     "https://open.weixin.qq.com/connect/oauth2/authorize?appid={0}&redirect_uri={1}&response_type=code&scope=snsapi_userinfo&state={2}&component_appid={3}#wechat_redirect";
@@ -78,7 +87,7 @@ namespace JinZhou.V2.Controllers
                     return Content("用户未授权，无法继续。");
                 }
 
-                
+                step = 1;
                 //通过code换取access_token
                 
                 string wxAccessTokenUrlFmt =
@@ -89,27 +98,41 @@ namespace JinZhou.V2.Controllers
                 string accessTokenJsonStr = string.Empty;
 
                 HttpClient client = new HttpClient();
-                
+                step = 2;
                     accessTokenJsonStr =
                         client.GetStringAsync(wxAccessTokenUrl)
                             .Result; //Senparc.CO2NET.HttpUtility.RequestUtility.HttpGet(wxAccessTokenUrl, null);
-               
 
+                step = 3;
                 var accessTokenJsonObj = JObject.Parse(accessTokenJsonStr);
                 var accessCode = accessTokenJsonObj.GetValue("access_token");
                 var openid = accessTokenJsonObj.GetValue("openid");
-                
+                step = 4;
                 //获取用户的基本信息
                 string wxUserInfoUrlFmt =
                     "https://api.weixin.qq.com/sns/userinfo?access_token={0}&openid={1}&lang=zh_CN";
                 string wxUserInfoUrl = string.Format(wxUserInfoUrlFmt, accessCode, openid);
 
+                step = 5;
                 string userInfoJsonStr = client.GetStringAsync(wxUserInfoUrl).Result; //Senparc.CO2NET.HttpUtility.RequestUtility.HttpGet(wxUserInfoUrl, null);
                 var userInfoJsonObj = JObject.Parse(userInfoJsonStr);
+                step = 6;
                 string openIdStr = openid.ToString();
+                step = 7;
                 var wxUserinfoEntity = db.WxUserInfos.FirstOrDefault(c => c.OpenId == openIdStr);
+                step = 8;
                 if (wxUserinfoEntity == null)
                 {
+                    step = userInfoJsonObj == null ? 8000 : step;
+                    step = userInfoJsonObj.GetValue("openid") == null ? 8001 : step;
+                    step = userInfoJsonObj.GetValue("nickname") == null ? 8002 : step;
+                    step = userInfoJsonObj.GetValue("sex") == null ? 8003 : step;
+                    step = userInfoJsonObj.GetValue("country") == null ? 8004 : step;
+                    step = userInfoJsonObj.GetValue("province") == null ? 8005 : step;
+                    step = userInfoJsonObj.GetValue("city") == null ? 8006 : step;
+                    step = userInfoJsonObj.GetValue("headimgurl") == null ? 8007 : step;
+                    step = userInfoJsonObj.GetValue("uionid") == null ? 8008 : step;
+                    
                     wxUserinfoEntity = new WxUserInfo()
                     {
                         OpenId = userInfoJsonObj.GetValue("openid").ToString(),
@@ -120,26 +143,31 @@ namespace JinZhou.V2.Controllers
                         City = userInfoJsonObj.GetValue("city").ToString(),
                         HeadImgUrl = userInfoJsonObj.GetValue("headimgurl").ToString()
                     };
+                    step = 8009;
                     JToken unionIdProperty = null;
                     if (userInfoJsonObj.TryGetValue("unionid", out unionIdProperty))
                     {
+                        step = 8010;
                         wxUserinfoEntity.UnionId = unionIdProperty.ToString();
                     }
 
+                    step = 8011;
                     db.WxUserInfos.Add(wxUserinfoEntity);
                     db.SaveChanges();
                 }
 
+                step = 9;
+
                 string decodeReturnUrl = HttpUtility.UrlDecode(returnUrl);
                 //append infos
-                
+                step = 17;
                 string redirectUrl = appendUserInfo(decodeReturnUrl, userInfoJsonObj);
 
                 return Redirect(redirectUrl);
             }
             catch (Exception e)
             {
-                return Content(e.ToString());
+                return Content("step."+step+", "+ e.ToString());
             }
         }
 

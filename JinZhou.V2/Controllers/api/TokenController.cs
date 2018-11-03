@@ -22,6 +22,32 @@ namespace JinZhou.V2.Controllers.api
             _context = ApplicationDbContext.Create();
         }
 
+        [HttpPost, Route("api/token/test")]
+        public IHttpActionResult TestApi()
+        {
+            int step = 0;
+            if (ComponentTokenService.GetInstance() == null)
+            {
+                step = 9001;
+            }
+            else
+            {
+                var componentToken = ComponentTokenService.GetInstance().Token;
+                if (componentToken == null)
+                {
+                    step = 9002;
+                }
+                else if(componentToken.ComponentAccessToken == null)
+                {
+                    step = 9003;
+                }
+            }
+
+
+
+            return Ok(step);
+        }
+
         [HttpPost, Route("api/install/entryurl")]
         public IHttpActionResult RetrieveInstallUrl()
         {
