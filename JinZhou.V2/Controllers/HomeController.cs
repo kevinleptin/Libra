@@ -10,6 +10,7 @@ using System.Web.Mvc;
 using JinZhou.V2.Models;
 using JinZhou.V2.Models.ViewModels;
 using JinZhou.V2.Services;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Senparc.Weixin.Open.ComponentAPIs;
 
@@ -118,44 +119,12 @@ namespace JinZhou.V2.Controllers
                 var userInfoJsonObj = JObject.Parse(userInfoJsonStr);
                 step = 6;
                 string openIdStr = openid.ToString();
-                step = 7;
-                var wxUserinfoEntity = db.WxUserInfos.FirstOrDefault(c => c.OpenId == openIdStr);
-                step = 8;
-                if (wxUserinfoEntity == null)
+                if (openid == null)
                 {
-                    step = userInfoJsonObj == null ? 8000 : step;
-                    step = userInfoJsonObj.GetValue("openid") == null ? 8001 : step;
-                    step = userInfoJsonObj.GetValue("nickname") == null ? 8002 : step;
-                    step = userInfoJsonObj.GetValue("sex") == null ? 8003 : step;
-                    step = userInfoJsonObj.GetValue("country") == null ? 8004 : step;
-                    step = userInfoJsonObj.GetValue("province") == null ? 8005 : step;
-                    step = userInfoJsonObj.GetValue("city") == null ? 8006 : step;
-                    step = userInfoJsonObj.GetValue("headimgurl") == null ? 8007 : step;
-                    step = userInfoJsonObj.GetValue("uionid") == null ? 8008 : step;
-                    
-                    wxUserinfoEntity = new WxUserInfo()
-                    {
-                        OpenId = userInfoJsonObj.GetValue("openid").ToString(),
-                        NickName = userInfoJsonObj.GetValue("nickname").ToString(),
-                        Sex = int.Parse(userInfoJsonObj.GetValue("sex").ToString()),
-                        Country = userInfoJsonObj.GetValue("country").ToString(),
-                        Province = userInfoJsonObj.GetValue("province").ToString(),
-                        City = userInfoJsonObj.GetValue("city").ToString(),
-                        HeadImgUrl = userInfoJsonObj.GetValue("headimgurl").ToString()
-                    };
-                    step = 8009;
-                    JToken unionIdProperty = null;
-                    if (userInfoJsonObj.TryGetValue("unionid", out unionIdProperty))
-                    {
-                        step = 8010;
-                        wxUserinfoEntity.UnionId = unionIdProperty.ToString();
-                    }
-
-                    step = 8011;
-                    db.WxUserInfos.Add(wxUserinfoEntity);
-                    db.SaveChanges();
+                    throw new Exception("openid is null \r\n Token info \r\n "+
+                                        JsonConvert.SerializeObject(componentToken)+" \r\n accessTokenJsonStr \r\n"+ 
+                                        accessTokenJsonStr +" \r\n userInfoJsonObj \r\n"+ userInfoJsonStr);
                 }
-
                 step = 9;
 
                 string decodeReturnUrl = HttpUtility.UrlDecode(returnUrl);

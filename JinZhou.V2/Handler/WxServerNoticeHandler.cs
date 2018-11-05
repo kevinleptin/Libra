@@ -40,6 +40,13 @@ namespace JinZhou.V2.Handler
             componentToken.ComponentVerifyTicket = requestMessage.ComponentVerifyTicket;
             ComponentTokenService.GetInstance().Save();
 
+            
+            var lastSyncDate = ComponentTokenService.GetInstance().LastSync;
+            if ((DateTime.Now - lastSyncDate).TotalHours >= 1)
+            {
+                ComponentTokenService.GetInstance().ForceUpdate();
+            }
+
             var expiredTime =
                 componentToken.ComponentAccessTokenCreateOn.AddSeconds(componentToken.ComponentAccessTokenExpiresIn);
             if (ExpiresIn(expiredTime, 1200))

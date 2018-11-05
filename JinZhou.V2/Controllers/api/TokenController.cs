@@ -9,6 +9,7 @@ using System.Web.Http;
 using JinZhou.V2.Handler;
 using JinZhou.V2.Models;
 using JinZhou.V2.Services;
+using Newtonsoft.Json;
 using Senparc.Weixin.Open.ComponentAPIs;
 
 namespace JinZhou.V2.Controllers.api
@@ -22,10 +23,29 @@ namespace JinZhou.V2.Controllers.api
             _context = ApplicationDbContext.Create();
         }
 
+        [HttpPost, Route("api/token/adjust")]
+        public IHttpActionResult AdjustToken()
+        {
+            var componentToken = ComponentTokenService.GetInstance().Token;
+            componentToken.ComponentAccessTokenCreateOn = componentToken.ComponentAccessTokenCreateOn.AddHours(-2);
+            return Ok(componentToken);
+        }
+
+        [HttpPost, Route("api/token/forceUpdate")]
+        public IHttpActionResult ForceUpdate()
+        {
+            var componentSvc = ComponentTokenService.GetInstance();
+            var beforeUpdate = JsonConvert.DeserializeObject(JsonConvert.SerializeObject(componentSvc.Token));
+            var afterUpdate = componentSvc.ForceUpdate();
+            var result = new {before = beforeUpdate, after = afterUpdate};
+            return Ok(result);
+        }
+
         [HttpPost, Route("api/token/test")]
         public IHttpActionResult TestApi()
         {
             int step = 0;
+            string msg = string.Empty;
             if (ComponentTokenService.GetInstance() == null)
             {
                 step = 9001;
@@ -41,11 +61,21 @@ namespace JinZhou.V2.Controllers.api
                 {
                     step = 9003;
                 }
+
+                if (componentToken != null)
+                {
+                    msg = JsonConvert.SerializeObject(componentToken);
+                }
+
+                if (step == 0)
+                {
+                    return Ok(componentToken);
+                }
             }
 
+            
 
-
-            return Ok(step);
+            return Ok(""+step + msg);
         }
 
         [HttpPost, Route("api/install/entryurl")]
