@@ -12,10 +12,12 @@ namespace JinZhou.V2.Services
         private ApplicationDbContext _context { get; set; }
         private static object locker = new object();
         private static ComponentTokenService _componentTokenService = null;
+        public DateTime LastSync { get; set; }
         private ComponentTokenService()
         {
            _context = ApplicationDbContext.Create();
             Token = _context.ComponentTokens.OrderByDescending(c => c.Id).FirstOrDefault();
+            LastSync = DateTime.Now;
             if (Token == null)
             {
                 Token = new ComponentToken();
@@ -38,6 +40,13 @@ namespace JinZhou.V2.Services
             }
 
             return _componentTokenService;
+        }
+
+        internal ComponentToken ForceUpdate()
+        {
+            Token = _context.ComponentTokens.OrderByDescending(c => c.Id).FirstOrDefault();
+            LastSync = DateTime.Now;
+            return Token;
         }
 
         /// <summary>
