@@ -118,13 +118,14 @@ namespace JinZhou.V2.Controllers
                 string userInfoJsonStr = client.GetStringAsync(wxUserInfoUrl).Result; //Senparc.CO2NET.HttpUtility.RequestUtility.HttpGet(wxUserInfoUrl, null);
                 var userInfoJsonObj = JObject.Parse(userInfoJsonStr);
                 step = 6;
-                string openIdStr = openid.ToString();
                 if (openid == null)
                 {
-                    throw new Exception("openid is null \r\n Token info \r\n "+
-                                        JsonConvert.SerializeObject(componentToken)+" \r\n accessTokenJsonStr \r\n"+ 
-                                        accessTokenJsonStr +" \r\n userInfoJsonObj \r\n"+ userInfoJsonStr);
+                    throw new Exception("openid is null \r\n Token info \r\n " +
+                                        JsonConvert.SerializeObject(componentToken) + " \r\n accessTokenJsonStr \r\n" +
+                                        accessTokenJsonStr + " \r\n userInfoJsonObj \r\n" + userInfoJsonStr);
                 }
+                string openIdStr = openid.ToString();
+                
                 step = 9;
 
                 string decodeReturnUrl = HttpUtility.UrlDecode(returnUrl);
