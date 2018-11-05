@@ -9,13 +9,13 @@ namespace JinZhou.V2.Services
     public class ComponentTokenService
     {
         public ComponentToken Token { get; set; }
-        private ApplicationDbContext _context { get; set; }
+        
         private static object locker = new object();
         private static ComponentTokenService _componentTokenService = null;
         public DateTime LastSync { get; set; }
         private ComponentTokenService()
         {
-           _context = ApplicationDbContext.Create();
+            ApplicationDbContext _context = ApplicationDbContext.Create();
             Token = _context.ComponentTokens.OrderByDescending(c => c.Id).FirstOrDefault();
             LastSync = DateTime.Now;
             if (Token == null)
@@ -44,6 +44,7 @@ namespace JinZhou.V2.Services
 
         internal ComponentToken ForceUpdate()
         {
+            ApplicationDbContext _context = new ApplicationDbContext();
             Token = _context.ComponentTokens.OrderByDescending(c => c.Id).FirstOrDefault();
             LastSync = DateTime.Now;
             return Token;
@@ -54,6 +55,19 @@ namespace JinZhou.V2.Services
         /// </summary>
         public void Save()
         {
+            ApplicationDbContext _context = new ApplicationDbContext();
+            var _token = _context.ComponentTokens.OrderByDescending(c => c.Id).FirstOrDefault();
+            
+            _token.ComponentAccessToken = Token.ComponentAccessToken;
+            _token.ComponentAccessTokenCreateOn = Token.ComponentAccessTokenCreateOn;
+            _token.ComponentAccessTokenExpiresIn = Token.ComponentAccessTokenExpiresIn;
+
+            _token.ComponentVerifyTicket = Token.ComponentVerifyTicket;
+            _token.ComponentVerifyTicketCreateOn = Token.ComponentVerifyTicketCreateOn;
+
+            _token.PreAuthCode = Token.PreAuthCode;
+            _token.PreAuthCodeCreateOn = Token.PreAuthCodeCreateOn;
+            _token.PreAuthCodeExpiresIn = Token.PreAuthCodeExpiresIn;
             _context.SaveChanges();
         }
     }

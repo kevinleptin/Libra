@@ -44,19 +44,10 @@ namespace JinZhou.V2.Controllers.api
             return Ok(result);
         }
 
+        
         [HttpPost, Route("api/token/test")]
         public IHttpActionResult TestApi()
         {
-        [HttpPost, Route("api/token/test/{id:int}")]
-        public IHttpActionResult TestApi(int? id)
-        {
-            if (id.HasValue)
-            {
-                string logFileName = DateTime.Now.ToFileTimeUtc().ToString()+"th"+Thread.CurrentThread.ManagedThreadId+".txt";
-                string absFileName = HostingEnvironment.MapPath("~/logs/" + logFileName);
-                File.WriteAllText(absFileName, "test Api");
-            }
-
             int step = 0;
             string msg = string.Empty;
             if (ComponentTokenService.GetInstance() == null)

@@ -39,7 +39,6 @@ namespace JinZhou.V2.Controllers
 
         public ActionResult UserAuth(string code, string state, string appid, string returnUrl)
         {
-            int step = 0;
             try
             {
                 if (string.IsNullOrEmpty(appid))
@@ -60,15 +59,7 @@ namespace JinZhou.V2.Controllers
                 //TODO: verify if returnUrl domain is legal or not.
 
                 string componentAppId = ConfigurationManager.AppSettings["AppId"];
-                if (ComponentTokenService.GetInstance() == null)
-                {
-                    step = 9001;
-                }
                 var componentToken = ComponentTokenService.GetInstance().Token;
-                if (componentToken == null)
-                {
-                    step = 9002;
-                }
                 string wxAuthRedirectUri = ConfigurationManager.AppSettings["UserAuthRedirectUri"]+"?returnUrl="+returnUrl;
                 string wxAuthUrlFmt =
                     "https://open.weixin.qq.com/connect/oauth2/authorize?appid={0}&redirect_uri={1}&response_type=code&scope=snsapi_userinfo&state={2}&component_appid={3}#wechat_redirect";
@@ -88,8 +79,7 @@ namespace JinZhou.V2.Controllers
                     // user reject the auth
                     return Content("用户未授权，无法继续。");
                 }
-
-                step = 1;
+                
                 //通过code换取access_token
                 
                 string wxAccessTokenUrlFmt =
@@ -100,51 +90,69 @@ namespace JinZhou.V2.Controllers
                 string accessTokenJsonStr = string.Empty;
 
                 HttpClient client = new HttpClient();
-                step = 2;
+                
+                    accessTokenJsonStr =
+                        client.GetStringAsync(wxAccessTokenUrl)
+                            .Result; //Senparc.CO2NET.HttpUtility.RequestUtility.HttpGet(wxAccessTokenUrl, null);
+                
+                var accessTokenJsonObj = JObject.Parse(accessTokenJsonStr);
+                var accessCode = accessTokenJsonObj.GetValue("access_token");
+                var openid = accessTokenJsonObj.GetValue("openid");
+                if (openid == null)
+                {
+                    //log & retry
+                    string logmsg = "RETRY: \r\n openid is null \r\n Token Url: "+wxAccessTokenUrl+" \r\n Token info \r\n " +
+                                        JsonConvert.SerializeObject(componentToken) + " \r\n accessTokenJsonStr \r\n" +
+                                        accessTokenJsonStr;
+                    
+
+                    ComponentTokenService.GetInstance().ForceUpdate();
+                    wxAccessTokenUrl = string.Format(wxAccessTokenUrlFmt, appid, code, componentAppId,
+                        componentToken.ComponentAccessToken);
+
+                    logmsg += "\r\n after update the token url is " + wxAccessTokenUrl;
+                    Log(logmsg);
+
+                    //RETRY：
                     accessTokenJsonStr =
                         client.GetStringAsync(wxAccessTokenUrl)
                             .Result; //Senparc.CO2NET.HttpUtility.RequestUtility.HttpGet(wxAccessTokenUrl, null);
 
-                step = 3;
-                var accessTokenJsonObj = JObject.Parse(accessTokenJsonStr);
-                var accessCode = accessTokenJsonObj.GetValue("access_token");
-                var openid = accessTokenJsonObj.GetValue("openid");
-                step = 4;
+                    accessTokenJsonObj = JObject.Parse(accessTokenJsonStr);
+                    accessCode = accessTokenJsonObj.GetValue("access_token");
+                    openid = accessTokenJsonObj.GetValue("openid");
+                }
+
                 //获取用户的基本信息
                 string wxUserInfoUrlFmt =
                     "https://api.weixin.qq.com/sns/userinfo?access_token={0}&openid={1}&lang=zh_CN";
                 string wxUserInfoUrl = string.Format(wxUserInfoUrlFmt, accessCode, openid);
-
-                step = 5;
+                
                 string userInfoJsonStr = client.GetStringAsync(wxUserInfoUrl).Result; //Senparc.CO2NET.HttpUtility.RequestUtility.HttpGet(wxUserInfoUrl, null);
                 var userInfoJsonObj = JObject.Parse(userInfoJsonStr);
-                step = 6;
-                if (openid == null)
-                {
-                    throw new Exception("openid is null \r\n Token info \r\n " +
-                                        JsonConvert.SerializeObject(componentToken) + " \r\n accessTokenJsonStr \r\n" +
-                                        accessTokenJsonStr + " \r\n userInfoJsonObj \r\n" + userInfoJsonStr);
-                }
+                
                 string openIdStr = openid.ToString();
                 
-                step = 9;
-
                 string decodeReturnUrl = HttpUtility.UrlDecode(returnUrl);
                 //append infos
-                step = 17;
                 string redirectUrl = appendUserInfo(decodeReturnUrl, userInfoJsonObj);
 
                 return Redirect(redirectUrl);
             }
             catch (Exception e)
             {
-                string msg = "step." + step + ", " + e.ToString();
-                string logFileName = DateTime.Now.ToFileTimeUtc().ToString() + "th" + Thread.CurrentThread.ManagedThreadId + ".txt";
-                string absFileName = Server.MapPath("~/logs/" + logFileName);
-                System.IO.File.WriteAllText(absFileName, msg);
+                string msg = e.ToString();
+                Log(msg);
                 
-                return Content("error code: "+step);
+                return Content("请刷新重试");
             }
+        }
+
+        private void Log(string msg)
+        {
+            string logFileName = DateTime.Now.ToFileTimeUtc().ToString() + "th" + Thread.CurrentThread.ManagedThreadId + ".txt";
+            string absFileName = Server.MapPath("~/logs/" + logFileName);
+            System.IO.File.WriteAllText(absFileName, msg);
         }
 
         private string appendUserInfo(string url, JObject userInfo)
@@ -233,10 +241,16 @@ namespace JinZhou.V2.Controllers
             token.MpRefreshToken = queryAuth.authorization_info.authorizer_refresh_token;
             token.ExpiredIn = queryAuth.authorization_info.expires_in;
             token.BelongToMp = authorizerInfoEntity;
-
+            
             db.SaveChanges();
 
-
+            //update preauthcode
+            var updatedCode = ComponentApi.GetPreAuthCode(ConfigurationManager.AppSettings["AppId"],
+                componentToken.ComponentAccessToken);
+            componentToken.PreAuthCodeExpiresIn = updatedCode.expires_in;
+            componentToken.PreAuthCode = updatedCode.pre_auth_code;
+            componentToken.PreAuthCodeCreateOn = DateTime.Now;
+            ComponentTokenService.GetInstance().Save();
 
 
             //HomeInstalledViewModel vm = new HomeInstalledViewModel();
