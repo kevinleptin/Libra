@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
 using System.Web;
 using JinZhou.V2.Models;
+using Senparc.Weixin.Open.ComponentAPIs;
 
 namespace JinZhou.V2.Services
 {
@@ -48,6 +50,28 @@ namespace JinZhou.V2.Services
             Token = _context.ComponentTokens.OrderByDescending(c => c.Id).FirstOrDefault();
             LastSync = DateTime.Now;
             return Token;
+        }
+
+        public ComponentToken ForceRefresh()
+        {
+            var componentToken = ComponentTokenService.GetInstance().Token;
+            //main server upadate 
+            try
+            {
+                var updatedToken = ComponentApi.GetComponentAccessToken(ConfigurationManager.AppSettings["AppId"],
+                    ConfigurationManager.AppSettings["AppSecret"],
+                    componentToken.ComponentVerifyTicket);
+                componentToken.ComponentAccessTokenCreateOn = DateTime.Now;
+                componentToken.ComponentAccessTokenExpiresIn = updatedToken.expires_in;
+                componentToken.ComponentAccessToken = updatedToken.component_access_token;
+            }
+            catch (Exception e)
+            {
+                componentToken.ComponentAccessToken = e.Message;
+            }
+
+            ComponentTokenService.GetInstance().Save();
+            return componentToken;
         }
 
         /// <summary>

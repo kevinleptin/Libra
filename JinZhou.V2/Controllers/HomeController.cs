@@ -59,7 +59,7 @@ namespace JinZhou.V2.Controllers
                 //TODO: verify if returnUrl domain is legal or not.
 
                 string componentAppId = ConfigurationManager.AppSettings["AppId"];
-                var componentToken = ComponentTokenService.GetInstance().Token;
+                
                 string wxAuthRedirectUri = ConfigurationManager.AppSettings["UserAuthRedirectUri"]+"?returnUrl="+returnUrl;
                 string wxAuthUrlFmt =
                     "https://open.weixin.qq.com/connect/oauth2/authorize?appid={0}&redirect_uri={1}&response_type=code&scope=snsapi_userinfo&state={2}&component_appid={3}#wechat_redirect";
@@ -79,9 +79,9 @@ namespace JinZhou.V2.Controllers
                     // user reject the auth
                     return Content("用户未授权，无法继续。");
                 }
-                
+
                 //通过code换取access_token
-                
+                var componentToken = ComponentTokenService.GetInstance().Token;
                 string wxAccessTokenUrlFmt =
                     "https://api.weixin.qq.com/sns/oauth2/component/access_token?appid={0}&code={1}&grant_type=authorization_code&component_appid={2}&component_access_token={3}";
                 string wxAccessTokenUrl = string.Format(wxAccessTokenUrlFmt, appid, code, componentAppId,
@@ -107,6 +107,34 @@ namespace JinZhou.V2.Controllers
                     
 
                     ComponentTokenService.GetInstance().ForceUpdate();
+                    componentToken = ComponentTokenService.GetInstance().Token;
+
+                    wxAccessTokenUrl = string.Format(wxAccessTokenUrlFmt, appid, code, componentAppId,
+                        componentToken.ComponentAccessToken);
+
+                    logmsg += "\r\n after update the token url is " + wxAccessTokenUrl;
+                    Log(logmsg);
+
+                    //RETRY：
+                    accessTokenJsonStr =
+                        client.GetStringAsync(wxAccessTokenUrl)
+                            .Result; //Senparc.CO2NET.HttpUtility.RequestUtility.HttpGet(wxAccessTokenUrl, null);
+
+                    accessTokenJsonObj = JObject.Parse(accessTokenJsonStr);
+                    accessCode = accessTokenJsonObj.GetValue("access_token");
+                    openid = accessTokenJsonObj.GetValue("openid");
+                }
+
+                if (openid == null)
+                {
+                    //log & retry
+                    string logmsg = "\r\n2ndRETRY: \r\n openid is null \r\n Token Url: " + wxAccessTokenUrl + " \r\n Token info \r\n " +
+                                        JsonConvert.SerializeObject(componentToken) + " \r\n accessTokenJsonStr \r\n" +
+                                        accessTokenJsonStr;
+                    ComponentTokenService.GetInstance().ForceRefresh();
+                    ComponentTokenService.GetInstance().ForceUpdate();
+                    componentToken = ComponentTokenService.GetInstance().Token;
+
                     wxAccessTokenUrl = string.Format(wxAccessTokenUrlFmt, appid, code, componentAppId,
                         componentToken.ComponentAccessToken);
 
