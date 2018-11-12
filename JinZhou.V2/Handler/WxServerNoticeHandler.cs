@@ -3,10 +3,13 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Web;
+using System.Web.Hosting;
 using JinZhou.V2.Migrations;
 using JinZhou.V2.Models;
 using JinZhou.V2.Services;
+using Newtonsoft.Json;
 using Senparc.Weixin.Open;
 using Senparc.Weixin.Open.ComponentAPIs;
 using Senparc.Weixin.Open.Entities.Request;
@@ -16,11 +19,10 @@ namespace JinZhou.V2.Handler
 {
     public class WxServerNoticeHandler : ThirdPartyMessageHandler
     {
-        private ApplicationDbContext _Context;
         public WxServerNoticeHandler(Stream inputStream, PostModel postmodel = null)
             : base(inputStream, postmodel)
         {
-           _Context = ApplicationDbContext.Create();
+          
         }
 
         private bool ExpiresIn(DateTime expireAt, int seconds)
@@ -35,17 +37,12 @@ namespace JinZhou.V2.Handler
 
         public override string OnComponentVerifyTicketRequest(RequestMessageComponentVerifyTicket requestMessage)
         {
-            var componentToken = ComponentTokenService.GetInstance().Token;
+            ComponentTokenService cts = new ComponentTokenService();
+            var componentToken = cts.GetToken();
             componentToken.ComponentVerifyTicketCreateOn = DateTime.Now;
             componentToken.ComponentVerifyTicket = requestMessage.ComponentVerifyTicket;
-            ComponentTokenService.GetInstance().Save();
-
+            cts.SaveVerifyToken(componentToken);
             
-            var lastSyncDate = ComponentTokenService.GetInstance().LastSync;
-            if ((DateTime.Now - lastSyncDate).TotalHours >= 1)
-            {
-                ComponentTokenService.GetInstance().ForceUpdate();
-            }
 
             var expiredTime =
                 componentToken.ComponentAccessTokenCreateOn.AddSeconds(componentToken.ComponentAccessTokenExpiresIn);
@@ -59,13 +56,13 @@ namespace JinZhou.V2.Handler
                     componentToken.ComponentAccessTokenCreateOn = DateTime.Now;
                     componentToken.ComponentAccessTokenExpiresIn = updatedToken.expires_in;
                     componentToken.ComponentAccessToken = updatedToken.component_access_token;
+                    cts.SaveAccessToken(componentToken);
+                    Log("update access token to " + JsonConvert.SerializeObject(componentToken));
                 }
                 catch (Exception e)
                 {
-                    componentToken.ComponentAccessToken = e.Message;
+                    Log(e.ToString(), true);
                 }
-
-                ComponentTokenService.GetInstance().Save();
             }
 
             expiredTime = componentToken.PreAuthCodeCreateOn.AddSeconds(componentToken.PreAuthCodeExpiresIn);
@@ -78,17 +75,26 @@ namespace JinZhou.V2.Handler
                     componentToken.PreAuthCodeExpiresIn = updatedCode.expires_in;
                     componentToken.PreAuthCode = updatedCode.pre_auth_code;
                     componentToken.PreAuthCodeCreateOn = DateTime.Now;
+                    cts.SavePreAuthCode(componentToken);
+                    Log("update preauth to " + JsonConvert.SerializeObject(componentToken));
+                    
                 }
                 catch (Exception e2)
                 {
-                    componentToken.PreAuthCode = e2.Message;
+                    Log(e2.ToString(), true);
                 }
-                ComponentTokenService.GetInstance().Save();
             }
 
             
 
             return base.OnComponentVerifyTicketRequest(requestMessage);
+        }
+
+        private void Log(string msg, bool isError = false)
+        {
+            string logFileName = (isError?"":"upt")+DateTime.Now.ToFileTimeUtc().ToString() + "th" + Thread.CurrentThread.ManagedThreadId + ".txt";
+            string absFileName = HostingEnvironment.MapPath("~/logs/" + logFileName);
+            System.IO.File.WriteAllText(absFileName, msg);
         }
 
         public override void OnExecuting()

@@ -26,69 +26,24 @@ namespace JinZhou.V2.Controllers.api
             _context = ApplicationDbContext.Create();
         }
 
-        [HttpPost, Route("api/token/adjust")]
-        public IHttpActionResult AdjustToken()
-        {
-            var componentToken = ComponentTokenService.GetInstance().Token;
-            componentToken.ComponentAccessTokenCreateOn = componentToken.ComponentAccessTokenCreateOn.AddHours(-2);
-            return Ok(componentToken);
-        }
-
         [HttpPost, Route("api/token/forceUpdate")]
         public IHttpActionResult ForceUpdate()
         {
-            var componentSvc = ComponentTokenService.GetInstance();
-            var beforeUpdate = JsonConvert.DeserializeObject(JsonConvert.SerializeObject(componentSvc.Token));
-            var afterUpdate = componentSvc.ForceUpdate();
+            var componentSvc = new ComponentTokenService();
+            var beforeUpdate = JsonConvert.DeserializeObject(JsonConvert.SerializeObject(componentSvc.GetToken()));
+            var afterUpdate = componentSvc.ForceRefresh();
             var result = new {before = beforeUpdate, after = afterUpdate};
             return Ok(result);
         }
-
         
-        [HttpPost, Route("api/token/test")]
-        public IHttpActionResult TestApi()
-        {
-            int step = 0;
-            string msg = string.Empty;
-            if (ComponentTokenService.GetInstance() == null)
-            {
-                step = 9001;
-            }
-            else
-            {
-                var componentToken = ComponentTokenService.GetInstance().Token;
-                if (componentToken == null)
-                {
-                    step = 9002;
-                }
-                else if(componentToken.ComponentAccessToken == null)
-                {
-                    step = 9003;
-                }
-
-                if (componentToken != null)
-                {
-                    msg = JsonConvert.SerializeObject(componentToken);
-                }
-
-                if (step == 0)
-                {
-                    return Ok(componentToken);
-                }
-            }
-
-            
-
-            return Ok(""+step + msg);
-        }
 
         [HttpPost, Route("api/install/entryurl")]
         public IHttpActionResult RetrieveInstallUrl()
         {
-            
+            var cts = new ComponentTokenService();
             var WxAppId = ConfigurationManager.AppSettings["AppId"];
             var RedirectUri = ConfigurationManager.AppSettings["RedirectUri"];
-            var PreAuthCode = ComponentTokenService.GetInstance().Token.PreAuthCode;
+            var PreAuthCode = cts.GetToken().PreAuthCode;
 
             string urlFormat = "https://mp.weixin.qq.com/cgi-bin/componentloginpage?component_appid={0}&pre_auth_code={1}&redirect_uri={2}";
             string installUrl = string.Format(urlFormat, WxAppId, PreAuthCode, RedirectUri);
@@ -120,7 +75,8 @@ namespace JinZhou.V2.Controllers.api
 
         private void RefreshMpAccessCode()
         {
-            var componentToken = ComponentTokenService.GetInstance().Token;
+            var cts = new ComponentTokenService();
+            var componentToken = cts.GetToken();
             string componentAppId = ConfigurationManager.AppSettings["AppId"];
             var mpTokenList = _context.MpTokens.ToList();
             foreach (var mpToken in mpTokenList)

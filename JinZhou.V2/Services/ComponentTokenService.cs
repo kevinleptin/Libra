@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
+using System.Threading;
 using System.Web;
+using System.Web.Hosting;
 using JinZhou.V2.Models;
 using Senparc.Weixin.Open.ComponentAPIs;
 
@@ -10,89 +12,78 @@ namespace JinZhou.V2.Services
 {
     public class ComponentTokenService
     {
-        public ComponentToken Token { get; set; }
-        
-        private static object locker = new object();
-        private static ComponentTokenService _componentTokenService = null;
-        public DateTime LastSync { get; set; }
-        private ComponentTokenService()
+        public ComponentToken GetToken()
         {
-            ApplicationDbContext _context = ApplicationDbContext.Create();
-            Token = _context.ComponentTokens.OrderByDescending(c => c.Id).FirstOrDefault();
-            LastSync = DateTime.Now;
-            if (Token == null)
+            using(ApplicationDbContext _context = new ApplicationDbContext())
             {
-                Token = new ComponentToken();
-                _context.ComponentTokens.Add(Token);
-                _context.SaveChanges();
+                return _context.ComponentTokens.OrderByDescending(c => c.Id).First();
             }
         }
 
-        public static ComponentTokenService GetInstance()
+        private void Log(string msg)
         {
-            if (_componentTokenService == null)
-            {
-                lock (locker)
-                {
-                    if (_componentTokenService == null)
-                    {
-                        _componentTokenService = new ComponentTokenService();
-                    }
-                }
-            }
-
-            return _componentTokenService;
-        }
-
-        internal ComponentToken ForceUpdate()
-        {
-            ApplicationDbContext _context = new ApplicationDbContext();
-            Token = _context.ComponentTokens.OrderByDescending(c => c.Id).FirstOrDefault();
-            LastSync = DateTime.Now;
-            return Token;
+            string logFileName = DateTime.Now.ToFileTimeUtc().ToString() + "th" + Thread.CurrentThread.ManagedThreadId + ".txt";
+            string absFileName = HostingEnvironment.MapPath("~/logs/" + logFileName);
+            System.IO.File.WriteAllText(absFileName, msg);
         }
 
         public ComponentToken ForceRefresh()
         {
-            var componentToken = ComponentTokenService.GetInstance().Token;
-            //main server upadate 
-            try
+            using (ApplicationDbContext _context = new ApplicationDbContext())
             {
-                var updatedToken = ComponentApi.GetComponentAccessToken(ConfigurationManager.AppSettings["AppId"],
-                    ConfigurationManager.AppSettings["AppSecret"],
-                    componentToken.ComponentVerifyTicket);
-                componentToken.ComponentAccessTokenCreateOn = DateTime.Now;
-                componentToken.ComponentAccessTokenExpiresIn = updatedToken.expires_in;
-                componentToken.ComponentAccessToken = updatedToken.component_access_token;
+                var componentToken = _context.ComponentTokens.OrderByDescending(c => c.Id).First();
+                try
+                {
+                    var updatedToken = ComponentApi.GetComponentAccessToken(ConfigurationManager.AppSettings["AppId"],
+                        ConfigurationManager.AppSettings["AppSecret"],
+                        componentToken.ComponentVerifyTicket);
+                    componentToken.ComponentAccessTokenCreateOn = DateTime.Now;
+                    componentToken.ComponentAccessTokenExpiresIn = updatedToken.expires_in;
+                    componentToken.ComponentAccessToken = updatedToken.component_access_token;
+                    _context.SaveChanges();
+                }
+                catch (Exception e)
+                {
+                    Log(e.ToString());
+                }
+                return componentToken;
             }
-            catch (Exception e)
-            {
-                componentToken.ComponentAccessToken = e.Message;
-            }
-
-            ComponentTokenService.GetInstance().Save();
-            return componentToken;
         }
 
-        /// <summary>
-        /// Save updates on Token
-        /// </summary>
-        public void Save()
+        public void SaveVerifyToken(ComponentToken token)
         {
-            ApplicationDbContext _context = new ApplicationDbContext();
-            var _token = _context.ComponentTokens.OrderByDescending(c => c.Id).FirstOrDefault();
-            
-            _token.ComponentAccessToken = Token.ComponentAccessToken;
-            _token.ComponentAccessTokenCreateOn = Token.ComponentAccessTokenCreateOn;
-            _token.ComponentAccessTokenExpiresIn = Token.ComponentAccessTokenExpiresIn;
-
-            _token.ComponentVerifyTicket = Token.ComponentVerifyTicket;
-            _token.ComponentVerifyTicketCreateOn = Token.ComponentVerifyTicketCreateOn;
-
-            _token.PreAuthCode = Token.PreAuthCode;
-            _token.PreAuthCodeCreateOn = Token.PreAuthCodeCreateOn;
-            _token.PreAuthCodeExpiresIn = Token.PreAuthCodeExpiresIn;
-            _context.SaveChanges();
+            using (ApplicationDbContext _context = new ApplicationDbContext())
+            {
+                var tokenInDb = _context.ComponentTokens.OrderByDescending(c => c.Id).First();
+                tokenInDb.ComponentVerifyTicket = token.ComponentVerifyTicket;
+                tokenInDb.ComponentVerifyTicketCreateOn = token.ComponentVerifyTicketCreateOn;
+                _context.SaveChanges();
+            }
         }
+
+        public void SaveAccessToken(ComponentToken token)
+        {
+            using (ApplicationDbContext _context = new ApplicationDbContext())
+            {
+                var tokenInDb = _context.ComponentTokens.OrderByDescending(c => c.Id).First();
+                tokenInDb.ComponentAccessToken = token.ComponentAccessToken;
+                tokenInDb.ComponentAccessTokenCreateOn = token.ComponentAccessTokenCreateOn;
+                tokenInDb.ComponentAccessTokenExpiresIn = token.ComponentAccessTokenExpiresIn;
+                _context.SaveChanges();
+            }
+        }
+
+        public void SavePreAuthCode(ComponentToken token)
+        {
+            using (ApplicationDbContext _context = new ApplicationDbContext())
+            {
+                var tokenInDb = _context.ComponentTokens.OrderByDescending(c => c.Id).First();
+                tokenInDb.PreAuthCode = token.PreAuthCode;
+                tokenInDb.PreAuthCodeCreateOn = token.PreAuthCodeCreateOn;
+                tokenInDb.PreAuthCodeExpiresIn = token.PreAuthCodeExpiresIn;
+                _context.SaveChanges();
+            }
+        }
+        
     }
 }

@@ -79,9 +79,9 @@ namespace JinZhou.V2.Controllers
                     // user reject the auth
                     return Content("用户未授权，无法继续。");
                 }
-
+                var cts = new ComponentTokenService();
                 //通过code换取access_token
-                var componentToken = ComponentTokenService.GetInstance().Token;
+                var componentToken = cts.GetToken();
                 string wxAccessTokenUrlFmt =
                     "https://api.weixin.qq.com/sns/oauth2/component/access_token?appid={0}&code={1}&grant_type=authorization_code&component_appid={2}&component_access_token={3}";
                 string wxAccessTokenUrl = string.Format(wxAccessTokenUrlFmt, appid, code, componentAppId,
@@ -104,36 +104,10 @@ namespace JinZhou.V2.Controllers
                     string logmsg = "RETRY: \r\n openid is null \r\n Token Url: "+wxAccessTokenUrl+" \r\n Token info \r\n " +
                                         JsonConvert.SerializeObject(componentToken) + " \r\n accessTokenJsonStr \r\n" +
                                         accessTokenJsonStr;
-                    
 
-                    ComponentTokenService.GetInstance().ForceUpdate();
-                    componentToken = ComponentTokenService.GetInstance().Token;
 
-                    wxAccessTokenUrl = string.Format(wxAccessTokenUrlFmt, appid, code, componentAppId,
-                        componentToken.ComponentAccessToken);
-
-                    logmsg += "\r\n after update the token url is " + wxAccessTokenUrl;
-                    Log(logmsg);
-
-                    //RETRY：
-                    accessTokenJsonStr =
-                        client.GetStringAsync(wxAccessTokenUrl)
-                            .Result; //Senparc.CO2NET.HttpUtility.RequestUtility.HttpGet(wxAccessTokenUrl, null);
-
-                    accessTokenJsonObj = JObject.Parse(accessTokenJsonStr);
-                    accessCode = accessTokenJsonObj.GetValue("access_token");
-                    openid = accessTokenJsonObj.GetValue("openid");
-                }
-
-                if (openid == null)
-                {
-                    //log & retry
-                    string logmsg = "\r\n2ndRETRY: \r\n openid is null \r\n Token Url: " + wxAccessTokenUrl + " \r\n Token info \r\n " +
-                                        JsonConvert.SerializeObject(componentToken) + " \r\n accessTokenJsonStr \r\n" +
-                                        accessTokenJsonStr;
-                    ComponentTokenService.GetInstance().ForceRefresh();
-                    ComponentTokenService.GetInstance().ForceUpdate();
-                    componentToken = ComponentTokenService.GetInstance().Token;
+                    cts.ForceRefresh();
+                    componentToken = cts.GetToken();
 
                     wxAccessTokenUrl = string.Format(wxAccessTokenUrlFmt, appid, code, componentAppId,
                         componentToken.ComponentAccessToken);
@@ -210,17 +184,18 @@ namespace JinZhou.V2.Controllers
         public ActionResult Install()
         {
             //授权成功后返回的 /Home/Installed?auth_code=queryauthcode@@@tKlkuvs2i5XuP3wloLDuauVHnQ4kZdU6LPczHEAarkABxUURgl9hOy_YHb_Ndsn8uu6j6Uv1za9q1ecmHi4MvQ&expires_in=3600
-            
+            var cts = new ComponentTokenService();
             HomeInstallViewModel vm = new HomeInstallViewModel();
             vm.WxAppId = ConfigurationManager.AppSettings["AppId"];
             vm.RedirectUri = ConfigurationManager.AppSettings["RedirectUri"];
-            vm.PreAuthCode = ComponentTokenService.GetInstance().Token.PreAuthCode;
+            vm.PreAuthCode = cts.GetToken().PreAuthCode;
             return View(vm);
         }
 
         public ActionResult Installed(string auth_code, int expires_in)
         {
-            var componentToken = ComponentTokenService.GetInstance().Token;
+            var cts = new ComponentTokenService();
+            var componentToken = cts.GetToken();
             string componentAppId = ConfigurationManager.AppSettings["AppId"];
 
             var queryAuth = Senparc.Weixin.Open.ComponentAPIs.ComponentApi.QueryAuth(
@@ -278,7 +253,7 @@ namespace JinZhou.V2.Controllers
             componentToken.PreAuthCodeExpiresIn = updatedCode.expires_in;
             componentToken.PreAuthCode = updatedCode.pre_auth_code;
             componentToken.PreAuthCodeCreateOn = DateTime.Now;
-            ComponentTokenService.GetInstance().Save();
+            cts.SavePreAuthCode(componentToken);
 
 
             //HomeInstalledViewModel vm = new HomeInstalledViewModel();
