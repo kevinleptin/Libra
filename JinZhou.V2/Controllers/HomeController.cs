@@ -37,7 +37,7 @@ namespace JinZhou.V2.Controllers
             return View();
         }
 
-        public ActionResult UserAuth(string code, string state, string appid, string returnUrl)
+        public ActionResult UserAuth(string code, string state, string appid, string returnUrl, string scope)
         {
             try
             {
@@ -63,9 +63,18 @@ namespace JinZhou.V2.Controllers
                 string wxAuthRedirectUri = ConfigurationManager.AppSettings["UserAuthRedirectUri"]+"?returnUrl="+returnUrl;
                 string wxAuthUrlFmt =
                     "https://open.weixin.qq.com/connect/oauth2/authorize?appid={0}&redirect_uri={1}&response_type=code&scope=snsapi_userinfo&state={2}&component_appid={3}#wechat_redirect";
+
+                bool silentAuth = !string.IsNullOrEmpty(scope) && scope.ToLower() == "snsapi_base";
                 //state is null indicates it's first time to get here.
                 if (string.IsNullOrEmpty(state))
                 {
+                    //TODO: silent user auth here.
+                    if(silentAuth)
+                    {
+                        wxAuthUrlFmt =
+                    "https://open.weixin.qq.com/connect/oauth2/authorize?appid={0}&redirect_uri={1}&response_type=code&scope=snsapi_base&state={2}&component_appid={3}#wechat_redirect";
+                    }
+
                     //throw new Exception("wx based on "+ wxAuthRedirectUri);
                     //第一次进入，跳转到微信授权页
                     string wxAuthUrl = string.Format(wxAuthUrlFmt, appid, HttpUtility.UrlEncode(wxAuthRedirectUri).Replace("+", "%20"),
@@ -73,7 +82,7 @@ namespace JinZhou.V2.Controllers
 
                     return Redirect(wxAuthUrl);
                 }
-
+                
                 if (string.IsNullOrEmpty(code))
                 {
                     // user reject the auth
@@ -125,21 +134,38 @@ namespace JinZhou.V2.Controllers
                     openid = accessTokenJsonObj.GetValue("openid");
                 }
 
-                //获取用户的基本信息
-                string wxUserInfoUrlFmt =
-                    "https://api.weixin.qq.com/sns/userinfo?access_token={0}&openid={1}&lang=zh_CN";
-                string wxUserInfoUrl = string.Format(wxUserInfoUrlFmt, accessCode, openid);
-                
-                string userInfoJsonStr = client.GetStringAsync(wxUserInfoUrl).Result; //Senparc.CO2NET.HttpUtility.RequestUtility.HttpGet(wxUserInfoUrl, null);
-                var userInfoJsonObj = JObject.Parse(userInfoJsonStr);
-                
-                string openIdStr = openid.ToString();
-                
-                string decodeReturnUrl = HttpUtility.UrlDecode(returnUrl);
-                //append infos
-                string redirectUrl = appendUserInfo(decodeReturnUrl, userInfoJsonObj);
+                if (!silentAuth)
+                {
+                    //获取用户的基本信息
+                    string wxUserInfoUrlFmt =
+                        "https://api.weixin.qq.com/sns/userinfo?access_token={0}&openid={1}&lang=zh_CN";
+                    string wxUserInfoUrl = string.Format(wxUserInfoUrlFmt, accessCode, openid);
 
-                return Redirect(redirectUrl);
+                    string userInfoJsonStr = client.GetStringAsync(wxUserInfoUrl).Result; //Senparc.CO2NET.HttpUtility.RequestUtility.HttpGet(wxUserInfoUrl, null);
+                    var userInfoJsonObj = JObject.Parse(userInfoJsonStr);
+
+                    string openIdStr = openid.ToString();
+
+                    string decodeReturnUrl = HttpUtility.UrlDecode(returnUrl);
+                    //append infos
+                    string redirectUrl = appendUserInfo(decodeReturnUrl, userInfoJsonObj);
+
+                    return Redirect(redirectUrl);
+                }
+                else
+                {
+                    string decodeReturnUrl = HttpUtility.UrlDecode(returnUrl);
+                    bool alreadyHasUrlParameter = decodeReturnUrl.Contains("?");
+                    if (!alreadyHasUrlParameter)
+                    {
+                        decodeReturnUrl += "?openid="+openid;
+                    }
+                    else
+                    {
+                        decodeReturnUrl += "&openid=" + openid;
+                    }
+                    return Redirect(decodeReturnUrl);
+                }
             }
             catch (Exception e)
             {
