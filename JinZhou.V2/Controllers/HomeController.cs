@@ -73,6 +73,7 @@ namespace JinZhou.V2.Controllers
                     {
                         wxAuthUrlFmt =
                     "https://open.weixin.qq.com/connect/oauth2/authorize?appid={0}&redirect_uri={1}&response_type=code&scope=snsapi_base&state={2}&component_appid={3}#wechat_redirect";
+                        wxAuthRedirectUri += "&scope=snsapi_base";
                     }
 
                     //throw new Exception("wx based on "+ wxAuthRedirectUri);
